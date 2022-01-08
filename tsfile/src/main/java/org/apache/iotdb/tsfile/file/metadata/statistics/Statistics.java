@@ -54,7 +54,11 @@ public abstract class Statistics<T extends Serializable> {
 
   /** number of time-value points */
   private int count = 0;
-
+  private double validityErrors = 0;
+  private double speedAVG = 0;
+  private double speedSTD = 0;
+  private long[] timeWindow = new long[20];
+  private double[] valueWindow = new double[20];
   private long startTime = Long.MAX_VALUE;
   private long endTime = Long.MIN_VALUE;
 
@@ -111,6 +115,7 @@ public abstract class Statistics<T extends Serializable> {
   public int getSerializedSize() {
     return ReadWriteForEncodingUtils.uVarIntSize(count) // count
         + 16 // startTime, endTime
+        + 24 // validity, speed max, speed min
         + getStatsSize();
   }
 
@@ -121,6 +126,9 @@ public abstract class Statistics<T extends Serializable> {
     byteLen += ReadWriteForEncodingUtils.writeUnsignedVarInt(count, outputStream);
     byteLen += ReadWriteIOUtils.write(startTime, outputStream);
     byteLen += ReadWriteIOUtils.write(endTime, outputStream);
+    byteLen += ReadWriteIOUtils.write(validityErrors, outputStream);
+    byteLen += ReadWriteIOUtils.write(speedAVG, outputStream);
+    byteLen += ReadWriteIOUtils.write(speedSTD, outputStream);
     // value statistics of different data type
     byteLen += serializeStats(outputStream);
     return byteLen;
@@ -183,6 +191,9 @@ public abstract class Statistics<T extends Serializable> {
       }
       // must be sure no overlap between two statistics
       this.count += stats.count;
+      this.validityErrors += stats.validityErrors;
+      this.speedAVG = Math.min(stats.speedAVG, this.speedAVG);
+      this.speedSTD = Math.min(stats.speedSTD, this.speedSTD);
       mergeStatisticsValue((Statistics<T>) stats);
       isEmpty = false;
     } else {
@@ -214,9 +225,35 @@ public abstract class Statistics<T extends Serializable> {
     updateStats(value);
   }
 
+  // 更新Validity
   public void update(long time, double value) {
     update(time);
     updateStats(value);
+    // TODO: update avg and std
+
+    // update window
+    if (count <= 20) {
+      timeWindow[count-1] = time;
+      valueWindow[count-1] = value;
+      int index = count / 2;
+      if (index > 0) {
+        double speedNow = (valueWindow[index] - valueWindow[index-1]) / (timeWindow[index] - timeWindow[index-1]);
+        if (speedNow > this.speedAVG+3*this.speedSTD || speedNow < this.speedAVG-3*this.speedSTD){
+          this.validityErrors+=1;
+        }
+      }
+    } else {
+      System.arraycopy(timeWindow, 1, timeWindow, 0, 19);
+      timeWindow[19] = time;
+      System.arraycopy(valueWindow, 1, valueWindow, 0, 19);
+      valueWindow[19] = value;
+      double speedNow = (valueWindow[9] - valueWindow[8]) / (timeWindow[9] - timeWindow[8]);
+      if (speedNow > this.speedAVG+3*this.speedSTD || speedNow < this.speedAVG-3*this.speedSTD){
+        this.validityErrors+=1;
+      }
+    }
+
+
   }
 
   public void update(long time, Binary value) {
@@ -349,6 +386,9 @@ public abstract class Statistics<T extends Serializable> {
     statistics.setCount(ReadWriteForEncodingUtils.readUnsignedVarInt(inputStream));
     statistics.setStartTime(ReadWriteIOUtils.readLong(inputStream));
     statistics.setEndTime(ReadWriteIOUtils.readLong(inputStream));
+    statistics.setValidityErrors(ReadWriteIOUtils.readDouble(inputStream));
+    statistics.setSpeedAVG(ReadWriteIOUtils.readDouble(inputStream));
+    statistics.setSpeedSTD(ReadWriteIOUtils.readDouble(inputStream));
     statistics.deserialize(inputStream);
     statistics.isEmpty = false;
     return statistics;
@@ -360,9 +400,36 @@ public abstract class Statistics<T extends Serializable> {
     statistics.setCount(ReadWriteForEncodingUtils.readUnsignedVarInt(buffer));
     statistics.setStartTime(ReadWriteIOUtils.readLong(buffer));
     statistics.setEndTime(ReadWriteIOUtils.readLong(buffer));
+    statistics.setValidityErrors(ReadWriteIOUtils.readDouble(buffer));
+    statistics.setSpeedAVG(ReadWriteIOUtils.readDouble(buffer));
+    statistics.setSpeedSTD(ReadWriteIOUtils.readDouble(buffer));
     statistics.deserialize(buffer);
     statistics.isEmpty = false;
     return statistics;
+  }
+
+  public double getSpeedAVG() {
+    return speedAVG;
+  }
+
+  public void setSpeedAVG(double speedAVG) {
+    this.speedAVG = speedAVG;
+  }
+
+  public double getSpeedSTD() {
+    return speedSTD;
+  }
+
+  public void setSpeedSTD(double speedSTD) {
+    this.speedSTD = speedSTD;
+  }
+
+  public double getValidity() {
+    return validityErrors/count;
+  }
+
+  public void setValidityErrors(double validityErrors) {
+    this.validityErrors = validityErrors;
   }
 
   public long getStartTime() {

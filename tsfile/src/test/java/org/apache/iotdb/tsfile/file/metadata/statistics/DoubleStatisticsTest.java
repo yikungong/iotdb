@@ -30,10 +30,11 @@ public class DoubleStatisticsTest {
   @Test
   public void testUpdate() {
     Statistics<Double> doubleStats = new DoubleStatistics();
-    doubleStats.updateStats(1.34d);
+    doubleStats.update(1,1.34d);
     assertFalse(doubleStats.isEmpty());
-    doubleStats.updateStats(2.32d);
+    doubleStats.update(2,2.32d);
     assertFalse(doubleStats.isEmpty());
+    assertEquals(0.5, doubleStats.getValidity(), maxError);
     assertEquals(2.32d, doubleStats.getMaxValue(), maxError);
     assertEquals(1.34d, doubleStats.getMinValue(), maxError);
     assertEquals(2.32d + 1.34d, doubleStats.getSumDoubleValue(), maxError);
@@ -45,19 +46,21 @@ public class DoubleStatisticsTest {
   public void testMerge() {
     Statistics<Double> doubleStats1 = new DoubleStatistics();
     doubleStats1.setStartTime(0);
-    doubleStats1.setEndTime(2);
+    doubleStats1.setEndTime(1);
     Statistics<Double> doubleStats2 = new DoubleStatistics();
-    doubleStats2.setStartTime(3);
+    doubleStats2.setStartTime(2);
     doubleStats2.setEndTime(5);
 
-    doubleStats1.updateStats(1.34d);
-    doubleStats1.updateStats(100.13453d);
+    doubleStats1.update(0,1.34d);
+    doubleStats1.update(1,100.13453d);
 
-    doubleStats2.updateStats(200.435d);
+    doubleStats2.update(2, 200.435d);
+    doubleStats2.update(3, 200.435d);
 
     Statistics<Double> doubleStats3 = new DoubleStatistics();
     doubleStats3.mergeStatistics(doubleStats1);
     assertFalse(doubleStats3.isEmpty());
+    assertEquals(0.5, doubleStats3.getValidity(), maxError);
     assertEquals(100.13453d, doubleStats3.getMaxValue(), maxError);
     assertEquals(1.34d, doubleStats3.getMinValue(), maxError);
     assertEquals(100.13453d + 1.34d, doubleStats3.getSumDoubleValue(), maxError);
@@ -65,9 +68,11 @@ public class DoubleStatisticsTest {
     assertEquals(100.13453d, doubleStats3.getLastValue(), maxError);
 
     doubleStats3.mergeStatistics(doubleStats2);
+
+    assertEquals(0.25, doubleStats3.getValidity(), maxError);
     assertEquals(200.435d, doubleStats3.getMaxValue(), maxError);
     assertEquals(1.34d, doubleStats3.getMinValue(), maxError);
-    assertEquals(100.13453d + 1.34d + 200.435d, doubleStats3.getSumDoubleValue(), maxError);
+    assertEquals(100.13453d + 1.34d + 200.435d + 200.435d, doubleStats3.getSumDoubleValue(), maxError);
     assertEquals(1.34d, doubleStats3.getFirstValue(), maxError);
     assertEquals(200.435d, doubleStats3.getLastValue(), maxError);
 
