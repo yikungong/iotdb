@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
 import java.util.Objects;
 
 /**
@@ -52,13 +53,22 @@ public abstract class Statistics<T extends Serializable> {
    */
   protected boolean isEmpty = true;
 
+  protected boolean validityMerge = true;
   /** number of time-value points */
   private int count = 0;
+
+  private int indexEnd = 0;
+  private int indexLastRepaired = -1;
   private double validityErrors = 0;
   private double speedAVG = 0;
   private double speedSTD = 0;
-  private long[] timeWindow = new long[20];
-  private double[] valueWindow = new double[20];
+  private int windowSize = 20;
+  private LinkedList<Long> firstTimeWindow = new LinkedList<>();
+  private LinkedList<Double> firstValueWindow = new LinkedList<>();
+  private LinkedList<Long> timeWindow = new LinkedList<>();
+  private LinkedList<Double> valueWindow = new LinkedList<>();
+  private LinkedList<Integer> repairedIndex = new LinkedList<>();
+  private LinkedList<Integer> repairedSize = new LinkedList<>();
   private long startTime = Long.MAX_VALUE;
   private long endTime = Long.MIN_VALUE;
 
@@ -182,18 +192,37 @@ public abstract class Statistics<T extends Serializable> {
    */
   @SuppressWarnings("unchecked")
   public void mergeStatistics(Statistics<? extends Serializable> stats) {
+
     if (this.getClass() == stats.getClass()) {
+      if (this.count == 0) {
+        this.timeWindow = stats.timeWindow;
+        this.valueWindow = stats.valueWindow;
+        this.firstValueWindow = stats.firstValueWindow;
+        this.firstTimeWindow = stats.firstTimeWindow;
+      } else {
+        if (stats.firstTimeWindow.size() < windowSize) {
+          for (int i = 0; i < stats.firstTimeWindow.size(); i++) {
+            update(stats.firstTimeWindow.get(i), stats.firstValueWindow.get(i));
+          }
+          return;
+        }
+      }
       if (stats.startTime < this.startTime) {
         this.startTime = stats.startTime;
+        int length = stats.firstTimeWindow.size();
+        for (int i = length; i <= windowSize; i++) {}
+
+        this.firstValueWindow = stats.firstValueWindow;
+        this.firstTimeWindow = stats.firstTimeWindow;
       }
       if (stats.endTime > this.endTime) {
         this.endTime = stats.endTime;
       }
       // must be sure no overlap between two statistics
       this.count += stats.count;
-      this.validityErrors += stats.validityErrors;
       this.speedAVG = Math.min(stats.speedAVG, this.speedAVG);
       this.speedSTD = Math.min(stats.speedSTD, this.speedSTD);
+      this.validityErrors += stats.validityErrors;
       mergeStatisticsValue((Statistics<T>) stats);
       isEmpty = false;
     } else {
@@ -229,31 +258,109 @@ public abstract class Statistics<T extends Serializable> {
   public void update(long time, double value) {
     update(time);
     updateStats(value);
-    // TODO: update avg and std
+
+    double smax = this.speedAVG + 3 * this.speedSTD;
+    double smin = this.speedAVG - 3 * this.speedSTD;
 
     // update window
-    if (count <= 20) {
-      timeWindow[count-1] = time;
-      valueWindow[count-1] = value;
-      int index = count / 2;
+    if (timeWindow.size() < windowSize) {
+      int index = timeWindow.size();
+      timeWindow.add(time);
+      valueWindow.add(value);
+      firstTimeWindow.add(time);
+      firstValueWindow.add(value);
+      indexEnd = index;
       if (index > 0) {
-        double speedNow = (valueWindow[index] - valueWindow[index-1]) / (timeWindow[index] - timeWindow[index-1]);
-        if (speedNow > this.speedAVG+3*this.speedSTD || speedNow < this.speedAVG-3*this.speedSTD){
-          this.validityErrors+=1;
+        double timeLastInterval = timeWindow.get(index) - timeWindow.get(index - 1);
+        if (timeLastInterval != 0) {
+          double speedNow =
+              (valueWindow.get(index) - valueWindow.get(index - 1)) / timeLastInterval;
+          updateAVGSTD(speedNow);
+          smax = this.speedAVG + 3 * this.speedSTD;
+          smin = this.speedAVG - 3 * this.speedSTD;
+          if ((speedNow < smin || speedNow > smax) && index < windowSize / 2) {
+            validityErrors += 1;
+          }
         }
       }
+
+    } else if ((count - indexLastRepaired) > windowSize / 2 + 1) {
+      timeWindow.pollFirst();
+      valueWindow.pollFirst();
+      timeWindow.add(time);
+      valueWindow.add(value);
+      double speedLast = 0;
+      double speedNow = 0;
+
+      int index = windowSize - 1;
+      if (index > 0) {
+        double timeLastInterval = timeWindow.get(index) - timeWindow.get(index - 1);
+        if (timeLastInterval != 0) {
+          speedLast = (valueWindow.get(index) - valueWindow.get(index - 1)) / timeLastInterval;
+          updateAVGSTD(speedLast);
+        }
+      }
+      double timeInterval = (timeWindow.get(windowSize / 2) - timeWindow.get(windowSize / 2 - 1));
+      if (timeInterval != 0) {
+        speedNow =
+            (valueWindow.get(windowSize / 2) - valueWindow.get(windowSize / 2 - 1)) / timeInterval;
+      } else {
+        return;
+      }
+      //      Test used
+      //      smin = -2;
+      //      smax = +2;
+
+      if (speedNow > smax || speedNow < smin) {
+        int needRepairIndex = windowSize / 2;
+        int startScanIndex = needRepairIndex - 1;
+        int stopScanIndex = needRepairIndex + 1;
+        this.validityErrors +=
+            repairSize(smin, smax, startScanIndex, stopScanIndex, indexLastRepaired);
+      }
     } else {
-      System.arraycopy(timeWindow, 1, timeWindow, 0, 19);
-      timeWindow[19] = time;
-      System.arraycopy(valueWindow, 1, valueWindow, 0, 19);
-      valueWindow[19] = value;
-      double speedNow = (valueWindow[9] - valueWindow[8]) / (timeWindow[9] - timeWindow[8]);
-      if (speedNow > this.speedAVG+3*this.speedSTD || speedNow < this.speedAVG-3*this.speedSTD){
-        this.validityErrors+=1;
+      timeWindow.pollFirst();
+      valueWindow.pollFirst();
+      timeWindow.add(time);
+      valueWindow.add(value);
+      int index = windowSize - 1;
+      if (index > 0) {
+        double timeLastInterval = timeWindow.get(index) - timeWindow.get(index - 1);
+        if (timeLastInterval != 0) {
+          double speedLast =
+              (valueWindow.get(index) - valueWindow.get(index - 1)) / timeLastInterval;
+          updateAVGSTD(speedLast);
+        }
       }
     }
+  }
 
+  public int repairSize(
+      double smin, double smax, int firstScanIndex, int lastScanIndex, int indexLastRepaired) {
+    int lastRepairIndex = windowSize - (count - indexLastRepaired);
+    for (int i = 0; i < windowSize / 2; i++) {
+      for (int j = 0; j < i; j++) {
+        int startIndex = firstScanIndex - j;
+        int stopIndex = lastScanIndex + (i - j);
+        if (startIndex > 0 && startIndex > lastRepairIndex && stopIndex < timeWindow.size()) {
+          long timeInterval = timeWindow.get(stopIndex) - timeWindow.get(startIndex);
+          double valueInterval = valueWindow.get(stopIndex) - valueWindow.get(startIndex);
+          double speedNow = valueInterval / timeInterval;
+          if (speedNow <= smax && speedNow >= smin) {
+            this.indexLastRepaired = count - stopIndex + 1;
+            return stopIndex - startIndex - 1;
+          }
+        }
+      }
+    }
+    return 0;
+  }
 
+  public void updateAVGSTD(double speedNow) {
+    speedSTD =
+        (count - 1) / Math.pow(count, 2) * Math.pow(speedNow - speedAVG, 2)
+            + (double) (count - 1) / count * speedSTD;
+    speedAVG = speedAVG + (speedNow - speedAVG) / count;
   }
 
   public void update(long time, Binary value) {
@@ -408,6 +515,38 @@ public abstract class Statistics<T extends Serializable> {
     return statistics;
   }
 
+  public LinkedList<Long> getFirstTimeWindow() {
+    return firstTimeWindow;
+  }
+
+  public void setFirstTimeWindow(LinkedList<Long> firstTimeWindow) {
+    this.firstTimeWindow = firstTimeWindow;
+  }
+
+  public LinkedList<Double> getFirstValueWindow() {
+    return firstValueWindow;
+  }
+
+  public void setFirstValueWindow(LinkedList<Double> firstValueWindow) {
+    this.firstValueWindow = firstValueWindow;
+  }
+
+  public LinkedList<Long> getTimeWindow() {
+    return timeWindow;
+  }
+
+  public void setTimeWindow(LinkedList<Long> timeWindow) {
+    this.timeWindow = timeWindow;
+  }
+
+  public LinkedList<Double> getValueWindow() {
+    return valueWindow;
+  }
+
+  public void setValueWindow(LinkedList<Double> valueWindow) {
+    this.valueWindow = valueWindow;
+  }
+
   public double getSpeedAVG() {
     return speedAVG;
   }
@@ -425,7 +564,7 @@ public abstract class Statistics<T extends Serializable> {
   }
 
   public double getValidity() {
-    return validityErrors/count;
+    return 1 - validityErrors / count;
   }
 
   public void setValidityErrors(double validityErrors) {
@@ -458,9 +597,44 @@ public abstract class Statistics<T extends Serializable> {
 
   public abstract long calculateRamSize();
 
+  public boolean checkMergeable(Statistics<? extends Serializable> statisticsMerge) {
+    if (this.count == 0) {
+      return true;
+    } else if (this.indexLastRepaired == count - 1) {
+      return false;
+    } else if (this.timeWindow.size() < windowSize) {
+      return statisticsMerge.firstTimeWindow.size() < windowSize;
+    } else if (statisticsMerge.firstTimeWindow.size() < windowSize) {
+      return true;
+    } else {
+      double smin =
+          Math.max(
+              this.speedAVG - 3 * this.speedSTD,
+              statisticsMerge.speedAVG - 3 * statisticsMerge.speedSTD);
+      double smax =
+          Math.min(
+              this.speedAVG + 3 * this.speedSTD,
+              statisticsMerge.speedAVG + 3 * statisticsMerge.speedSTD);
+      long timeInterval =
+          this.timeWindow.get(this.timeWindow.size() - 1) - statisticsMerge.firstTimeWindow.get(0);
+      double valueInterval =
+          this.valueWindow.get(this.timeWindow.size() - 1)
+              - statisticsMerge.firstValueWindow.get(0);
+      double speedInterval = valueInterval / timeInterval;
+      return speedInterval < smax && speedInterval > smin;
+    }
+  }
+
   @Override
   public String toString() {
-    return "startTime: " + startTime + " endTime: " + endTime + " count: " + count;
+    return "startTime: "
+        + startTime
+        + " endTime: "
+        + endTime
+        + " count: "
+        + count
+        + "validityerrors:"
+        + validityErrors;
   }
 
   @Override

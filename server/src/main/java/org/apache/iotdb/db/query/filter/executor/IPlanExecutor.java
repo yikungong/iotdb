@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.iotdb.db.qp.executor;
+package org.apache.iotdb.db.query.filter.executor;
 
 import org.apache.iotdb.db.engine.storagegroup.VirtualStorageGroupProcessor.TimePartitionFilter;
 import org.apache.iotdb.db.exception.BatchProcessException;

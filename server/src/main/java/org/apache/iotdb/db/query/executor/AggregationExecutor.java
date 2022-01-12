@@ -34,6 +34,9 @@ import org.apache.iotdb.db.qp.physical.crud.AggregationPlan;
 import org.apache.iotdb.db.qp.physical.crud.QueryPlan;
 import org.apache.iotdb.db.qp.physical.crud.RawDataQueryPlan;
 import org.apache.iotdb.db.query.aggregation.AggregateResult;
+import org.apache.iotdb.db.query.aggregation.AggregationType;
+import org.apache.iotdb.db.query.aggregation.impl.ValidityAggrResult;
+import org.apache.iotdb.db.query.aggregation.impl.ValidityAllAggrResult;
 import org.apache.iotdb.db.query.context.QueryContext;
 import org.apache.iotdb.db.query.control.QueryResourceManager;
 import org.apache.iotdb.db.query.dataset.SingleDataSet;
@@ -155,13 +158,25 @@ public class AggregationExecutor {
       throws IOException, QueryProcessException, StorageEngineException {
     List<AggregateResult> ascAggregateResultList = new ArrayList<>();
     List<AggregateResult> descAggregateResultList = new ArrayList<>();
+    ValidityAggrResult validityAggrResult = null;
+    ValidityAllAggrResult validityAggrALLResult = null;
     boolean[] isAsc = new boolean[aggregateResultList.length];
+    boolean[] isValidity = new boolean[aggregateResultList.length];
 
     TSDataType tsDataType = dataTypes.get(indexes.get(0));
     for (int i : indexes) {
       // construct AggregateResult
       AggregateResult aggregateResult =
           AggregateResultFactory.getAggrResultByName(aggregations.get(i), tsDataType);
+      if (aggregateResult.getAggregationType() == AggregationType.VALIDITY) {
+        validityAggrResult = (ValidityAggrResult) aggregateResult;
+        isValidity[i] = true;
+        continue;
+      } else if (aggregateResult.getAggregationType() == AggregationType.VALIDITYALL) {
+        validityAggrALLResult = (ValidityAllAggrResult) aggregateResult;
+        isValidity[i] = true;
+        continue;
+      }
       if (aggregateResult.isAscending()) {
         ascAggregateResultList.add(aggregateResult);
         isAsc[i] = true;
@@ -178,14 +193,159 @@ public class AggregationExecutor {
         ascAggregateResultList,
         descAggregateResultList,
         null);
-
+    if (validityAggrResult != null) {
+      aggregateValidity(
+          seriesPath,
+          allMeasurementsInDevice,
+          context,
+          timeFilter,
+          tsDataType,
+          validityAggrResult,
+          null);
+    } else if (validityAggrALLResult != null) {
+      aggregateValidityALL(
+          seriesPath,
+          allMeasurementsInDevice,
+          context,
+          timeFilter,
+          tsDataType,
+          validityAggrALLResult,
+          null);
+    }
     int ascIndex = 0;
     int descIndex = 0;
     for (int i : indexes) {
-      aggregateResultList[i] =
-          isAsc[i]
-              ? ascAggregateResultList.get(ascIndex++)
-              : descAggregateResultList.get(descIndex++);
+      if (isValidity[i]) {
+        if (validityAggrResult != null) {
+          aggregateResultList[i] = validityAggrResult;
+        } else {
+          aggregateResultList[i] = validityAggrALLResult;
+        }
+      } else {
+        aggregateResultList[i] =
+            (isAsc[i]
+                ? ascAggregateResultList.get(ascIndex++)
+                : descAggregateResultList.get(descIndex++));
+      }
+    }
+  }
+
+  // 所有都查
+  private void aggregateValidityALL(
+      PartialPath seriesPath,
+      Set<String> measurements,
+      QueryContext context,
+      Filter timeFilter,
+      TSDataType tsDataType,
+      ValidityAllAggrResult validityAggrResult,
+      TsFileFilter fileFilter)
+      throws QueryProcessException, StorageEngineException, IOException {
+    // construct series reader without value filter
+    QueryDataSource queryDataSource =
+        QueryResourceManager.getInstance().getQueryDataSource(seriesPath, context, timeFilter);
+    if (fileFilter != null) {
+      QueryUtils.filterQueryDataSource(queryDataSource, fileFilter);
+    }
+    // update filter by TTL
+    timeFilter = queryDataSource.updateFilterUsingTTL(timeFilter);
+
+    IAggregateReader seriesReader =
+        new SeriesAggregateReader(
+            seriesPath,
+            measurements,
+            tsDataType,
+            context,
+            queryDataSource,
+            timeFilter,
+            null,
+            null,
+            true);
+    while (seriesReader.hasNextFile()) {
+      while (seriesReader.hasNextChunk()) {
+        while (seriesReader.hasNextPage()) {
+          IBatchDataIterator batchDataIterator = seriesReader.nextPage().getBatchDataIterator();
+          validityAggrResult.updateResultFromPageData(batchDataIterator);
+          batchDataIterator.reset();
+        }
+      }
+    }
+  }
+
+  private void aggregateValidity(
+      PartialPath seriesPath,
+      Set<String> measurements,
+      QueryContext context,
+      Filter timeFilter,
+      TSDataType tsDataType,
+      ValidityAggrResult validityAggrResult,
+      TsFileFilter fileFilter)
+      throws QueryProcessException, StorageEngineException, IOException {
+    // construct series reader without value filter
+    QueryDataSource queryDataSource =
+        QueryResourceManager.getInstance().getQueryDataSource(seriesPath, context, timeFilter);
+    if (fileFilter != null) {
+      QueryUtils.filterQueryDataSource(queryDataSource, fileFilter);
+    }
+    // update filter by TTL
+    timeFilter = queryDataSource.updateFilterUsingTTL(timeFilter);
+
+    IAggregateReader seriesReader =
+        new SeriesAggregateReader(
+            seriesPath,
+            measurements,
+            tsDataType,
+            context,
+            queryDataSource,
+            timeFilter,
+            null,
+            null,
+            true);
+    boolean mergeable = true;
+    while (seriesReader.hasNextFile()) {
+      // cal by file statistics
+      if (seriesReader.canUseCurrentFileStatistics() && mergeable) {
+        System.out.println("file Merge");
+        Statistics fileStatistics = seriesReader.currentFileStatistics();
+        if (validityAggrResult.checkMergeable(fileStatistics)) {
+          validityAggrResult.updateResultFromStatistics(fileStatistics);
+          seriesReader.skipCurrentFile();
+          continue;
+        } else {
+          mergeable = false;
+        }
+      }
+
+      while (seriesReader.hasNextChunk()) {
+        // cal by chunk statistics
+        if (seriesReader.canUseCurrentChunkStatistics() && mergeable) {
+          System.out.println("chunk Merge");
+          Statistics chunkStatistics = seriesReader.currentChunkStatistics();
+          if (validityAggrResult.checkMergeable(chunkStatistics)) {
+            validityAggrResult.updateResultFromStatistics(chunkStatistics);
+            seriesReader.skipCurrentChunk();
+            continue;
+          } else {
+            mergeable = false;
+          }
+        }
+        while (seriesReader.hasNextPage()) {
+          // cal by page statistics
+          if (seriesReader.canUseCurrentPageStatistics() && mergeable) {
+            System.out.println("page Merge");
+            Statistics pageStatistic = seriesReader.currentPageStatistics();
+            if (validityAggrResult.checkMergeable(pageStatistic)) {
+              validityAggrResult.updateResultFromStatistics(pageStatistic);
+              seriesReader.skipCurrentPage();
+              continue;
+            } else {
+              mergeable = false;
+            }
+          }
+          IBatchDataIterator batchDataIterator = seriesReader.nextPage().getBatchDataIterator();
+          validityAggrResult.updateResultFromPageData(batchDataIterator);
+          batchDataIterator.reset();
+        }
+      }
     }
   }
 
