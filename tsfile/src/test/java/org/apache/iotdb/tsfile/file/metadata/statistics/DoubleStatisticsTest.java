@@ -101,10 +101,13 @@ public class DoubleStatisticsTest {
   public void testUpdateValidity() {
     Statistics<Double> doubleStats = new DoubleStatistics();
 
+    System.out.println(Runtime.getRuntime().totalMemory()/1024/1024);
     for (int i = 1 ; i < 1000 ; i++){
       doubleStats.update(i, 2.32d);
       assertFalse(doubleStats.isEmpty());
     }
+    System.out.println(Runtime.getRuntime().freeMemory()/1024/1024);
+
     double smax = doubleStats.getSpeedAVG() + 3 * doubleStats.getSpeedSTD();
     double smin = doubleStats.getSpeedAVG() - 3 * doubleStats.getSpeedSTD();
     doubleStats.updateReverseDP((int) doubleStats.getCount(), smax, smin);

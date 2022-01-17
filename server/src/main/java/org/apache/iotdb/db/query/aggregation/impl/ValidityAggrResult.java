@@ -72,7 +72,7 @@ public class ValidityAggrResult extends AggregateResult {
     }
     double smax = statisticsInstance.getSpeedAVG() + 3 * statisticsInstance.getSpeedSTD();
     double smin = statisticsInstance.getSpeedAVG() - 3 * statisticsInstance.getSpeedSTD();
-    statisticsInstance.updateReverseDP((int) statisticsInstance.getCount(), smax, smin);
+    statisticsInstance.updateReverseDP(statisticsInstance.getTimeWindow().size(), smax, smin);
   }
 
   @Override

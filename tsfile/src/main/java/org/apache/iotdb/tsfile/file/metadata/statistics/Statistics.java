@@ -74,8 +74,6 @@ public abstract class Statistics<T extends Serializable> {
   private List<Double> valueWindow = new ArrayList<>();
   private List<Integer> DP = new ArrayList<>();
   private List<Integer> reverseDP = new ArrayList<>();
-  private List<Integer> repairedIndex = new ArrayList<>();
-  private List<Integer> repairedSize = new ArrayList<>();
   private long startTime = Long.MAX_VALUE;
   private long endTime = Long.MIN_VALUE;
   private double startValue;
