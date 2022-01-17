@@ -282,6 +282,7 @@ public abstract class Statistics<T extends Serializable> {
     } else {
       startValue = value;
       endValue = value;
+      firstRepair.add(false);
       DP.add(0);
     }
   }
@@ -290,53 +291,66 @@ public abstract class Statistics<T extends Serializable> {
     Long time = timeWindow.getLast();
     Double value = valueWindow.getLast();
     int dp = -1;
+    boolean find = false;
     for (int i = 0; i < Length - 1; i++) {
       if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
           && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
+        find = true;
         if (dp == -1) {
           dp = DP.get(i) + Length - i - 2;
-          if (dp == i - 1 || firstRepair.get(i)) {
+          if (firstRepair.get(i)) {
             firstRepair.add(true);
           } else {
             firstRepair.add(false);
           }
         } else {
           dp = Math.min(DP.get(i) + Length - i - 2, dp);
-          if (dp == i - 1 || firstRepair.get(i)) {
-            firstRepair.set(i, true);
+          if (firstRepair.get(i)) {
+            firstRepair.add(true);
           } else {
-            firstRepair.set(i, false);
+            firstRepair.add(false);
           }
         }
       }
+    }
+    if (!find) {
+      dp = Length - 1;
+      firstRepair.add(true);
     }
     DP.add(dp);
   }
 
   public void updateReverseDP(int Length, double smax, double smin) {
+    lastRepair.add(false);
     for (int j = Length - 2; j >= 0; j--) {
       Long time = timeWindow.get(j);
       Double value = valueWindow.get(j);
       int dp = -1;
+      boolean find = false;
       for (int i = Length - 1; i > j; i--) {
         if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
             && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
+          find = true;
           if (dp == -1) {
             dp = reverseDP.get(i) + i - j - 1;
-            if (dp == Length - j - 1 || lastRepair.get(i)) {
+            if (lastRepair.get(i)) {
               lastRepair.add(true);
             } else {
               lastRepair.add(false);
             }
           } else {
             dp = Math.min(reverseDP.get(i) + i - j - 1, dp);
-            if (dp == Length - j - 1 || lastRepair.get(i)) {
-              lastRepair.set(j, true);
+            if (lastRepair.get(i)) {
+              lastRepair.add(true);
             } else {
-              lastRepair.set(j, false);
+              lastRepair.add(false);
             }
           }
         }
+      }
+      if (!find) {
+        dp = Length - 1;
+        firstRepair.add(true);
       }
       reverseDP.add(dp);
     }
