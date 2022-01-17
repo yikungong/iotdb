@@ -304,11 +304,11 @@ public class AggregationExecutor {
     while (seriesReader.hasNextFile()) {
       // cal by file statistics
       if (seriesReader.canUseCurrentFileStatistics() && mergeable) {
-        System.out.println("file Merge");
         Statistics fileStatistics = seriesReader.currentFileStatistics();
         if (validityAggrResult.checkMergeable(fileStatistics)) {
           validityAggrResult.updateResultFromStatistics(fileStatistics);
           seriesReader.skipCurrentFile();
+          System.out.println("file Merge");
           continue;
         } else {
           mergeable = false;
@@ -318,11 +318,11 @@ public class AggregationExecutor {
       while (seriesReader.hasNextChunk()) {
         // cal by chunk statistics
         if (seriesReader.canUseCurrentChunkStatistics() && mergeable) {
-          System.out.println("chunk Merge");
           Statistics chunkStatistics = seriesReader.currentChunkStatistics();
           if (validityAggrResult.checkMergeable(chunkStatistics)) {
             validityAggrResult.updateResultFromStatistics(chunkStatistics);
             seriesReader.skipCurrentChunk();
+            System.out.println("chunk Merge");
             continue;
           } else {
             mergeable = false;
@@ -331,11 +331,11 @@ public class AggregationExecutor {
         while (seriesReader.hasNextPage()) {
           // cal by page statistics
           if (seriesReader.canUseCurrentPageStatistics() && mergeable) {
-            System.out.println("page Merge");
             Statistics pageStatistic = seriesReader.currentPageStatistics();
             if (validityAggrResult.checkMergeable(pageStatistic)) {
               validityAggrResult.updateResultFromStatistics(pageStatistic);
               seriesReader.skipCurrentPage();
+              System.out.println("page Merge");
               continue;
             } else {
               mergeable = false;
@@ -343,6 +343,7 @@ public class AggregationExecutor {
           }
           IBatchDataIterator batchDataIterator = seriesReader.nextPage().getBatchDataIterator();
           validityAggrResult.updateResultFromPageData(batchDataIterator);
+          mergeable = true;
           batchDataIterator.reset();
         }
       }

@@ -34,7 +34,6 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
@@ -211,6 +210,9 @@ public abstract class Statistics<T extends Serializable> {
     if (this.getClass() == stats.getClass()) {
       this.timeWindow = stats.timeWindow;
       this.valueWindow = stats.valueWindow;
+      this.DP = stats.DP;
+      this.firstRepair = stats.firstRepair;
+      this.lastRepair = stats.lastRepair;
       if (stats.startTime < this.startTime) {
         this.startValue = stats.startValue;
         this.startTime = stats.startTime;
@@ -288,34 +290,52 @@ public abstract class Statistics<T extends Serializable> {
     }
   }
 
-  public void updateDP(int Length, double smax, double smin) {
-    Long time = timeWindow.get(Length-1);
-    Double value = valueWindow.get(Length-1);
+  public void updateDP(int index, double smax, double smin) {
+    Long time = timeWindow.get(index);
+    Double value = valueWindow.get(index);
     int dp = -1;
     boolean find = false;
-    for (int i = 0; i < Length - 1; i++) {
+    for (int i = 0; i < index; i++) {
       if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
           && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
         find = true;
         if (dp == -1) {
-          dp = DP.get(i) + Length - i - 2;
+          dp = DP.get(i) + index - i - 1;
           if (firstRepair.get(i)) {
-            firstRepair.add(true);
+            if (firstRepair.size() == index + 1) {
+              firstRepair.set(index, true);
+            } else {
+              firstRepair.add(true);
+            }
           } else {
-            firstRepair.add(false);
+            if (firstRepair.size() == index + 1) {
+              firstRepair.set(index, false);
+            } else {
+              firstRepair.add(false);
+            }
           }
         } else {
-          dp = Math.min(DP.get(i) + Length - i - 2, dp);
-          if (firstRepair.get(i)) {
-            firstRepair.add(true);
-          } else {
-            firstRepair.add(false);
+          if (DP.get(i) + index - i - 1 < dp) {
+            dp = DP.get(i) + index - i - 1;
+            if (firstRepair.get(i)) {
+              if (firstRepair.size() == index + 1) {
+                firstRepair.set(index, true);
+              } else {
+                firstRepair.add(true);
+              }
+            } else {
+              if (firstRepair.size() == index + 1) {
+                firstRepair.set(index, false);
+              } else {
+                firstRepair.add(false);
+              }
+            }
           }
         }
       }
     }
     if (!find) {
-      dp = Length - 1;
+      dp = index;
       firstRepair.add(true);
     }
     DP.add(dp);
@@ -326,7 +346,7 @@ public abstract class Statistics<T extends Serializable> {
     reverseDP.add(0);
 
     for (int j = Length - 2; j >= 0; j--) {
-      if (j == Length / 2){
+      if (j == Length / 2) {
         System.out.println("half");
       }
       Long time = timeWindow.get(j);
@@ -340,24 +360,42 @@ public abstract class Statistics<T extends Serializable> {
           find = true;
           if (dp == -1) {
             dp = reverseDP.get(index) + i - j - 1;
-            if (lastRepair.get(index)) {
-              lastRepair.add(true);
+            if (firstRepair.get(index)) {
+              if (firstRepair.size() == Length - j) {
+                firstRepair.set(Length - j - 1, true);
+              } else {
+                firstRepair.add(true);
+              }
             } else {
-              lastRepair.add(false);
+              if (firstRepair.size() == Length - j) {
+                firstRepair.set(Length - j - 1, false);
+              } else {
+                firstRepair.add(false);
+              }
             }
           } else {
-            dp = Math.min(reverseDP.get(index) + i - j - 1, dp);
-            if (lastRepair.get(index)) {
-              lastRepair.add(true);
-            } else {
-              lastRepair.add(false);
+            if (reverseDP.get(index) + i - j - 1 < dp) {
+              dp = reverseDP.get(index) + i - j - 1;
+              if (firstRepair.get(i)) {
+                if (firstRepair.size() == Length) {
+                  firstRepair.set(Length - 1, true);
+                } else {
+                  firstRepair.add(true);
+                }
+              } else {
+                if (firstRepair.size() == Length) {
+                  firstRepair.set(Length - 1, false);
+                } else {
+                  firstRepair.add(false);
+                }
+              }
             }
           }
         }
       }
       if (!find) {
         dp = Length - 1;
-        firstRepair.add(true);
+        lastRepair.add(true);
       }
       reverseDP.add(dp);
     }
@@ -557,6 +595,38 @@ public abstract class Statistics<T extends Serializable> {
 
   public List<Double> getValueWindow() {
     return valueWindow;
+  }
+
+  public List<Boolean> getLastRepair() {
+    return lastRepair;
+  }
+
+  public List<Boolean> getFirstRepair() {
+    return firstRepair;
+  }
+
+  public List<Integer> getDP() {
+    return DP;
+  }
+
+  public List<Integer> getReverseDP() {
+    return reverseDP;
+  }
+
+  public void setLastRepair(List<Boolean> lastRepair) {
+    this.lastRepair = lastRepair;
+  }
+
+  public void setFirstRepair(List<Boolean> firstRepair) {
+    this.firstRepair = firstRepair;
+  }
+
+  public void setDP(List<Integer> DP) {
+    this.DP = DP;
+  }
+
+  public void setReverseDP(List<Integer> reverseDP) {
+    this.reverseDP = reverseDP;
   }
 
   public void setValueWindow(List<Double> valueWindow) {

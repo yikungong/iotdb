@@ -102,16 +102,16 @@ public class DoubleStatisticsTest {
     Statistics<Double> doubleStats = new DoubleStatistics();
     Statistics<Double> doubleStatsMerge = new DoubleStatistics();
 
-    System.out.println(Runtime.getRuntime().totalMemory()/1024/1024);
-    for (int i = 1 ; i < 1000 ; i++){
+    System.out.println(Runtime.getRuntime().totalMemory() / 1024 / 1024);
+    for (int i = 1; i < 1000; i++) {
       doubleStats.update(i, 2.32d);
       assertFalse(doubleStats.isEmpty());
     }
-    for (int i = 1 ; i < 1000 ; i++){
-      doubleStatsMerge.update(i+1000, 23.90d);
+    for (int i = 1; i < 1000; i++) {
+      doubleStatsMerge.update(i + 1000, 23.90d);
       assertFalse(doubleStatsMerge.isEmpty());
     }
-    System.out.println(Runtime.getRuntime().freeMemory()/1024/1024);
+    System.out.println(Runtime.getRuntime().freeMemory() / 1024 / 1024);
 
     double smax = doubleStats.getSpeedAVG() + 3 * doubleStats.getSpeedSTD();
     double smin = doubleStats.getSpeedAVG() - 3 * doubleStats.getSpeedSTD();
