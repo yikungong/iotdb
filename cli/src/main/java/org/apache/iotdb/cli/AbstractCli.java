@@ -116,6 +116,8 @@ public abstract class AbstractCli {
 
   static ServerProperties properties = null;
 
+  public static long runningTime = 0;
+
   private static boolean cursorBeforeFirst = true;
 
   static void init() {
@@ -509,6 +511,7 @@ public abstract class AbstractCli {
               cacheResult(resultSet, maxSizeList, columnLength, resultSetMetaData, zoneId);
           output(lists, maxSizeList);
           long costTime = System.currentTimeMillis() - startTime;
+          runningTime = costTime;
           println(String.format("It costs %.3fs", costTime / 1000.0));
           while (!isReachEnd) {
             if (continuePrint) {
@@ -550,6 +553,10 @@ public abstract class AbstractCli {
     } finally {
       resetArgs();
     }
+  }
+
+  public static long getRunningTime() {
+    return runningTime;
   }
 
   /**
