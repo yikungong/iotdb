@@ -100,11 +100,16 @@ public class DoubleStatisticsTest {
   @Test
   public void testUpdateValidity() {
     Statistics<Double> doubleStats = new DoubleStatistics();
+    Statistics<Double> doubleStatsMerge = new DoubleStatistics();
 
     System.out.println(Runtime.getRuntime().totalMemory()/1024/1024);
     for (int i = 1 ; i < 1000 ; i++){
       doubleStats.update(i, 2.32d);
       assertFalse(doubleStats.isEmpty());
+    }
+    for (int i = 1 ; i < 1000 ; i++){
+      doubleStatsMerge.update(i+1000, 23.90d);
+      assertFalse(doubleStatsMerge.isEmpty());
     }
     System.out.println(Runtime.getRuntime().freeMemory()/1024/1024);
 
@@ -113,5 +118,7 @@ public class DoubleStatisticsTest {
     doubleStats.updateReverseDP((int) doubleStats.getCount(), smax, smin);
 
     assertEquals(1.0, doubleStats.getValidity(), maxError);
+    doubleStats.mergeStatistics(doubleStatsMerge);
+    doubleStats.updateReverseDP(doubleStats.getTimeWindow().size(), smax, smin);
   }
 }

@@ -211,14 +211,15 @@ public abstract class Statistics<T extends Serializable> {
     if (this.getClass() == stats.getClass()) {
       this.timeWindow = stats.timeWindow;
       this.valueWindow = stats.valueWindow;
-      this.DP = stats.DP;
       if (stats.startTime < this.startTime) {
         this.startValue = stats.startValue;
         this.startTime = stats.startTime;
+        this.repairSelfFirst = stats.repairSelfFirst;
       }
       if (stats.endTime > this.endTime) {
         this.endValue = stats.endValue;
         this.endTime = stats.endTime;
+        this.repairSelfLast = stats.repairSelfLast;
       }
       // must be sure no overlap between two statistics
       this.count += stats.count;
