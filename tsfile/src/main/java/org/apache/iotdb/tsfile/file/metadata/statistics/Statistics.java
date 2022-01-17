@@ -33,7 +33,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -63,17 +65,17 @@ public abstract class Statistics<T extends Serializable> {
   private double speedAVG = 0;
   private double speedSTD = 0;
   private int windowSize = 20;
-  private LinkedList<Boolean> lastRepair = new LinkedList<>();
-  private LinkedList<Boolean> firstRepair = new LinkedList<>();
+  private List<Boolean> lastRepair = new ArrayList<>();
+  private List<Boolean> firstRepair = new ArrayList<>();
   private boolean repairSelfLast = true;
   private boolean repairSelfFirst = true;
   private int indexNotRepair = -1;
-  private LinkedList<Long> timeWindow = new LinkedList<>();
-  private LinkedList<Double> valueWindow = new LinkedList<>();
-  private LinkedList<Integer> DP = new LinkedList<>();
-  private LinkedList<Integer> reverseDP = new LinkedList<>();
-  private LinkedList<Integer> repairedIndex = new LinkedList<>();
-  private LinkedList<Integer> repairedSize = new LinkedList<>();
+  private List<Long> timeWindow = new ArrayList<>();
+  private List<Double> valueWindow = new ArrayList<>();
+  private List<Integer> DP = new ArrayList<>();
+  private List<Integer> reverseDP = new ArrayList<>();
+  private List<Integer> repairedIndex = new ArrayList<>();
+  private List<Integer> repairedSize = new ArrayList<>();
   private long startTime = Long.MAX_VALUE;
   private long endTime = Long.MIN_VALUE;
   private double startValue;
@@ -288,8 +290,8 @@ public abstract class Statistics<T extends Serializable> {
   }
 
   public void updateDP(int Length, double smax, double smin) {
-    Long time = timeWindow.getLast();
-    Double value = valueWindow.getLast();
+    Long time = timeWindow.get(Length-1);
+    Double value = valueWindow.get(Length-1);
     int dp = -1;
     boolean find = false;
     for (int i = 0; i < Length - 1; i++) {
@@ -322,25 +324,31 @@ public abstract class Statistics<T extends Serializable> {
 
   public void updateReverseDP(int Length, double smax, double smin) {
     lastRepair.add(false);
+    reverseDP.add(0);
+
     for (int j = Length - 2; j >= 0; j--) {
+      if (j == Length / 2){
+        System.out.println("half");
+      }
       Long time = timeWindow.get(j);
       Double value = valueWindow.get(j);
       int dp = -1;
       boolean find = false;
       for (int i = Length - 1; i > j; i--) {
+        int index = Length - i - 1;
         if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
             && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
           find = true;
           if (dp == -1) {
-            dp = reverseDP.get(i) + i - j - 1;
-            if (lastRepair.get(i)) {
+            dp = reverseDP.get(index) + i - j - 1;
+            if (lastRepair.get(index)) {
               lastRepair.add(true);
             } else {
               lastRepair.add(false);
             }
           } else {
-            dp = Math.min(reverseDP.get(i) + i - j - 1, dp);
-            if (lastRepair.get(i)) {
+            dp = Math.min(reverseDP.get(index) + i - j - 1, dp);
+            if (lastRepair.get(index)) {
               lastRepair.add(true);
             } else {
               lastRepair.add(false);
@@ -540,19 +548,19 @@ public abstract class Statistics<T extends Serializable> {
     return statistics;
   }
 
-  public LinkedList<Long> getTimeWindow() {
+  public List<Long> getTimeWindow() {
     return timeWindow;
   }
 
-  public void setTimeWindow(LinkedList<Long> timeWindow) {
+  public void setTimeWindow(List<Long> timeWindow) {
     this.timeWindow = timeWindow;
   }
 
-  public LinkedList<Double> getValueWindow() {
+  public List<Double> getValueWindow() {
     return valueWindow;
   }
 
-  public void setValueWindow(LinkedList<Double> valueWindow) {
+  public void setValueWindow(List<Double> valueWindow) {
     this.valueWindow = valueWindow;
   }
 
