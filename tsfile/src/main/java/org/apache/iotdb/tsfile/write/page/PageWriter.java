@@ -291,6 +291,8 @@ public class PageWriter {
   }
 
   public Statistics<? extends Serializable> getStatistics() {
+    statistics.updateDP();
+    statistics.updateReverseDP();
     return statistics;
   }
 }
