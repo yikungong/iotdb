@@ -416,7 +416,7 @@ public abstract class Statistics<T extends Serializable> {
       DP.add(dp);
       if (DP.size() > windowSize) {
         DP.remove(0);
-        DP.remove(0);
+        firstRepair.remove(0);
         break;
       }
     }
