@@ -52,6 +52,8 @@ public class DescAggregateResultTest {
       assertFalse(doubleStatsMerge.isEmpty());
     }
     System.out.println(Runtime.getRuntime().freeMemory() / 1024 / 1024);
+    doubleStatsMerge.updateDP();
+    doubleStatsMerge.updateReverseDP();
     ValidityAggrResult.updateResultFromStatistics(doubleStatsMerge);
 
     BatchData batchData = BatchDataFactory.createBatchData(TSDataType.DOUBLE, false, false);
