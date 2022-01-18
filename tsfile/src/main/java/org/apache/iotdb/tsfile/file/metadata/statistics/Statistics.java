@@ -273,6 +273,9 @@ public abstract class Statistics<T extends Serializable> {
     timeWindow.add(time);
     valueWindow.add(value);
     endValue = value;
+    if (index <= 1) {
+      return;
+    }
     double timeLastInterval = timeWindow.get(index) - timeWindow.get(index - 1);
     if (timeLastInterval != 0) {
       double speedNow = (valueWindow.get(index) - valueWindow.get(index - 1)) / timeLastInterval;
@@ -507,16 +510,15 @@ public abstract class Statistics<T extends Serializable> {
   }
 
   public void updateReverseDP() {
-
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
+
     lastRepair.add(false);
     reverseDP.add(0);
+
     int Length = this.timeWindow.size();
+
     for (int j = Length - 2; j >= 0; j--) {
-      if (j == Length / 2) {
-        System.out.println("half");
-      }
       Long time = timeWindow.get(j);
       Double value = valueWindow.get(j);
       int dp = -1;
@@ -544,7 +546,7 @@ public abstract class Statistics<T extends Serializable> {
           } else {
             if (reverseDP.get(index) + i - j - 1 < dp) {
               dp = reverseDP.get(index) + i - j - 1;
-              if (lastRepair.get(i)) {
+              if (lastRepair.get(index)) {
                 if (lastRepair.size() == Length) {
                   lastRepair.set(Length - 1, true);
                 } else {
