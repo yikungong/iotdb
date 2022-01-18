@@ -495,7 +495,7 @@ public abstract class Statistics<T extends Serializable> {
         indexLastRepaired = m;
       }
     }
-    validityErrors += validityErrorsTemp;
+    validityErrors = validityErrorsTemp;
     if (this.indexLastRepaired == -1) {
       this.repairSelfFirst = false;
       this.repairSelfLast = false;
