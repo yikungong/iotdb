@@ -141,6 +141,10 @@ public abstract class Statistics<T extends Serializable> {
 
   public int serialize(OutputStream outputStream) throws IOException {
     int byteLen = 0;
+    if (timeWindow.size() != 0) {
+      updateDP();
+      updateReverseDP();
+    }
     byteLen += ReadWriteForEncodingUtils.writeUnsignedVarInt(count, outputStream);
     byteLen += ReadWriteIOUtils.write(startTime, outputStream);
     byteLen += ReadWriteIOUtils.write(endTime, outputStream);

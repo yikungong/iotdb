@@ -282,8 +282,6 @@ public class ChunkWriterImpl implements IChunkWriter {
     try {
       if (numOfPages == 0) { // record the firstPageStatistics
         this.firstPageStatistics = pageWriter.getStatistics();
-        firstPageStatistics.updateDP();
-        firstPageStatistics.updateReverseDP();
         this.sizeWithoutStatistic = pageWriter.writePageHeaderAndDataIntoBuff(pageBuffer, true);
       } else if (numOfPages == 1) { // put the firstPageStatistics into pageBuffer
         byte[] b = pageBuffer.toByteArray();
@@ -318,8 +316,6 @@ public class ChunkWriterImpl implements IChunkWriter {
     numOfPages = 0;
     firstPageStatistics = null;
     this.statistics = Statistics.getStatsByType(measurementSchema.getType());
-    this.statistics.updateDP();
-    this.statistics.updateReverseDP();
   }
 
   @Override
