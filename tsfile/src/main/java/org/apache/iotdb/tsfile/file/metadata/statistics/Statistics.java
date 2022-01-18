@@ -63,7 +63,7 @@ public abstract class Statistics<T extends Serializable> {
   private int validityErrors = 0;
   private double speedAVG = 0;
   private double speedSTD = 0;
-  private int windowSize = 20;
+  private int windowSize = 2048;
   private List<Boolean> lastRepair = new ArrayList<>();
   private List<Boolean> firstRepair = new ArrayList<>();
   private boolean repairSelfLast = true;
@@ -263,37 +263,43 @@ public abstract class Statistics<T extends Serializable> {
   public void update(long time, double value) {
     update(time);
     updateStats(value);
-
-    double smax;
-    double smin;
-
     // update window
 
     int index = timeWindow.size();
     timeWindow.add(time);
     valueWindow.add(value);
     endValue = value;
-    if (index > 0) {
-      double timeLastInterval = timeWindow.get(index) - timeWindow.get(index - 1);
-      if (timeLastInterval != 0) {
-        double speedNow = (valueWindow.get(index) - valueWindow.get(index - 1)) / timeLastInterval;
-        updateAVGSTD(speedNow);
-        smax = this.speedAVG + 3 * this.speedSTD;
-        smin = this.speedAVG - 3 * this.speedSTD;
-        updateDP(index, smax, smin);
-      }
-      if (index > 1024) {
-        timeWindow.remove(0);
-        valueWindow.remove(0);
-        DP.remove(0);
-        firstRepair.remove(0);
-      }
-    } else {
-      startValue = value;
-      endValue = value;
-      firstRepair.add(false);
-      DP.add(0);
+    double timeLastInterval = timeWindow.get(index) - timeWindow.get(index - 1);
+    if (timeLastInterval != 0) {
+      double speedNow = (valueWindow.get(index) - valueWindow.get(index - 1)) / timeLastInterval;
+      updateAVGSTD(speedNow);
     }
+    if (index > windowSize) {
+      timeWindow.remove(0);
+      valueWindow.remove(0);
+    }
+    //    if (index > 0) {
+    //      double timeLastInterval = timeWindow.get(index) - timeWindow.get(index - 1);
+    //      if (timeLastInterval != 0) {
+    //        double speedNow = (valueWindow.get(index) - valueWindow.get(index - 1)) /
+    // timeLastInterval;
+    //        updateAVGSTD(speedNow);
+    //        smax = this.speedAVG + 3 * this.speedSTD;
+    //        smin = this.speedAVG - 3 * this.speedSTD;
+    //        updateDP(index, smax, smin);
+    //      }
+    //      if (index > windowSize) {
+    //        timeWindow.remove(0);
+    //        valueWindow.remove(0);
+    //        DP.remove(0);
+    //        firstRepair.remove(0);
+    //      }
+    //    } else {
+    //      startValue = value;
+    //      endValue = value;
+    //      firstRepair.add(false);
+    //      DP.add(0);
+    //    }
   }
 
   public void updateDP(int index, double smax, double smin) {
@@ -345,6 +351,68 @@ public abstract class Statistics<T extends Serializable> {
       firstRepair.add(true);
     }
     DP.add(dp);
+  }
+
+  public void updateDP() {
+    double smax = this.speedAVG + 3 * this.speedSTD;
+    double smin = this.speedAVG - 3 * this.speedSTD;
+    firstRepair.add(false);
+    DP.add(0);
+    for (int index = 1; index < timeWindow.size(); index++) {
+      Long time = timeWindow.get(index);
+      Double value = valueWindow.get(index);
+      int dp = -1;
+      boolean find = false;
+      for (int i = 0; i < index; i++) {
+        if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
+            && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
+          find = true;
+          if (dp == -1) {
+            dp = DP.get(i) + index - i - 1;
+            if (firstRepair.get(i)) {
+              if (firstRepair.size() == index + 1) {
+                firstRepair.set(index, true);
+              } else {
+                firstRepair.add(true);
+              }
+            } else {
+              if (firstRepair.size() == index + 1) {
+                firstRepair.set(index, false);
+              } else {
+                firstRepair.add(false);
+              }
+            }
+          } else {
+            if (DP.get(i) + index - i - 1 < dp) {
+              dp = DP.get(i) + index - i - 1;
+              if (firstRepair.get(i)) {
+                if (firstRepair.size() == index + 1) {
+                  firstRepair.set(index, true);
+                } else {
+                  firstRepair.add(true);
+                }
+              } else {
+                if (firstRepair.size() == index + 1) {
+                  firstRepair.set(index, false);
+                } else {
+                  firstRepair.add(false);
+                }
+              }
+            }
+          }
+        }
+      }
+      if (!find) {
+        dp = index;
+        firstRepair.add(true);
+      }
+      DP.add(dp);
+      if (DP.size() > windowSize) {
+        DP.remove(0);
+        DP.remove(0);
+        break;
+      }
+    }
   }
 
   public void updateReverseDP(int Length, double smax, double smin) {
@@ -404,15 +472,105 @@ public abstract class Statistics<T extends Serializable> {
         lastRepair.add(true);
       }
       reverseDP.add(dp);
-      if (reverseDP.size() > 1024) {
+      if (reverseDP.size() > windowSize) {
         reverseDP.remove(reverseDP.size() - 1);
         lastRepair.remove(lastRepair.size() - 1);
         break;
       }
     }
     int validityErrorsTemp = Length;
-    if (Length > 1024) {
-      Length = 1024;
+    if (Length > windowSize) {
+      Length = windowSize;
+    }
+    for (int m = 0; m < Length; m++) {
+      if (validityErrorsTemp > DP.get(m) + reverseDP.get(Length - 1 - m)) {
+        validityErrorsTemp = DP.get(m) + reverseDP.get(Length - 1 - m);
+        indexLastRepaired = m;
+      }
+    }
+    validityErrors += validityErrorsTemp;
+    if (this.indexLastRepaired == -1) {
+      this.repairSelfFirst = false;
+      this.repairSelfLast = false;
+      return;
+    }
+    if (this.firstRepair.get(this.indexLastRepaired)) {
+      this.repairSelfFirst = false;
+    }
+    if (this.lastRepair.get(this.indexLastRepaired)) {
+      this.repairSelfLast = false;
+    }
+  }
+
+  public void updateReverseDP() {
+
+    double smax = this.speedAVG + 3 * this.speedSTD;
+    double smin = this.speedAVG - 3 * this.speedSTD;
+    lastRepair.add(false);
+    reverseDP.add(0);
+    int Length = this.timeWindow.size();
+    for (int j = Length - 2; j >= 0; j--) {
+      if (j == Length / 2) {
+        System.out.println("half");
+      }
+      Long time = timeWindow.get(j);
+      Double value = valueWindow.get(j);
+      int dp = -1;
+      boolean find = false;
+      for (int i = Length - 1; i > j; i--) {
+        int index = Length - i - 1;
+        if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
+            && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
+          find = true;
+          if (dp == -1) {
+            dp = reverseDP.get(index) + i - j - 1;
+            if (lastRepair.get(index)) {
+              if (lastRepair.size() == Length - j) {
+                lastRepair.set(Length - j - 1, true);
+              } else {
+                lastRepair.add(true);
+              }
+            } else {
+              if (lastRepair.size() == Length - j) {
+                lastRepair.set(Length - j - 1, false);
+              } else {
+                lastRepair.add(false);
+              }
+            }
+          } else {
+            if (reverseDP.get(index) + i - j - 1 < dp) {
+              dp = reverseDP.get(index) + i - j - 1;
+              if (lastRepair.get(i)) {
+                if (lastRepair.size() == Length) {
+                  lastRepair.set(Length - 1, true);
+                } else {
+                  lastRepair.add(true);
+                }
+              } else {
+                if (lastRepair.size() == Length) {
+                  lastRepair.set(Length - 1, false);
+                } else {
+                  lastRepair.add(false);
+                }
+              }
+            }
+          }
+        }
+      }
+      if (!find) {
+        dp = Length - 1;
+        lastRepair.add(true);
+      }
+      reverseDP.add(dp);
+      if (reverseDP.size() > windowSize) {
+        reverseDP.remove(reverseDP.size() - 1);
+        lastRepair.remove(lastRepair.size() - 1);
+        break;
+      }
+    }
+    int validityErrorsTemp = Length;
+    if (Length > windowSize) {
+      Length = windowSize;
     }
     for (int m = 0; m < Length; m++) {
       if (validityErrorsTemp > DP.get(m) + reverseDP.get(Length - 1 - m)) {

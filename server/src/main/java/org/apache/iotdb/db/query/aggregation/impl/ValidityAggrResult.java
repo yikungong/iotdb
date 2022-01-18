@@ -70,10 +70,8 @@ public class ValidityAggrResult extends AggregateResult {
       statisticsInstance.update(batchIterator.currentTime(), (double) batchIterator.currentValue());
       batchIterator.next();
     }
-    double smax = statisticsInstance.getSpeedAVG() + 3 * statisticsInstance.getSpeedSTD();
-    double smin = statisticsInstance.getSpeedAVG() - 3 * statisticsInstance.getSpeedSTD();
-    System.out.println(statisticsInstance.getTimeWindow().size());
-    statisticsInstance.updateReverseDP(statisticsInstance.getTimeWindow().size(), smax, smin);
+    statisticsInstance.updateDP();
+    statisticsInstance.updateReverseDP();
   }
 
   @Override
@@ -85,6 +83,8 @@ public class ValidityAggrResult extends AggregateResult {
         statisticsInstance.update(timestamps[i], (double) values[i]);
       }
     }
+    statisticsInstance.updateDP();
+    statisticsInstance.updateReverseDP();
   }
 
   @Override
@@ -94,6 +94,8 @@ public class ValidityAggrResult extends AggregateResult {
       statisticsInstance.update(timestamps[i], (double) valueIterator.next());
       i++;
     }
+    statisticsInstance.updateDP();
+    statisticsInstance.updateReverseDP();
   }
 
   @Override
