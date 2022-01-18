@@ -282,6 +282,12 @@ public abstract class Statistics<T extends Serializable> {
         smin = this.speedAVG - 3 * this.speedSTD;
         updateDP(index, smax, smin);
       }
+      if (index > 1024){
+        timeWindow.remove(0);
+        valueWindow.remove(0);
+        DP.remove(0);
+        firstRepair.remove(0);
+      }
     } else {
       startValue = value;
       endValue = value;
@@ -360,33 +366,33 @@ public abstract class Statistics<T extends Serializable> {
           find = true;
           if (dp == -1) {
             dp = reverseDP.get(index) + i - j - 1;
-            if (firstRepair.get(index)) {
-              if (firstRepair.size() == Length - j) {
-                firstRepair.set(Length - j - 1, true);
+            if (lastRepair.get(index)) {
+              if (lastRepair.size() == Length - j) {
+                lastRepair.set(Length - j - 1, true);
               } else {
-                firstRepair.add(true);
+                lastRepair.add(true);
               }
             } else {
-              if (firstRepair.size() == Length - j) {
-                firstRepair.set(Length - j - 1, false);
+              if (lastRepair.size() == Length - j) {
+                lastRepair.set(Length - j - 1, false);
               } else {
-                firstRepair.add(false);
+                lastRepair.add(false);
               }
             }
           } else {
             if (reverseDP.get(index) + i - j - 1 < dp) {
               dp = reverseDP.get(index) + i - j - 1;
-              if (firstRepair.get(i)) {
-                if (firstRepair.size() == Length) {
-                  firstRepair.set(Length - 1, true);
+              if (lastRepair.get(i)) {
+                if (lastRepair.size() == Length) {
+                  lastRepair.set(Length - 1, true);
                 } else {
-                  firstRepair.add(true);
+                  lastRepair.add(true);
                 }
               } else {
-                if (firstRepair.size() == Length) {
-                  firstRepair.set(Length - 1, false);
+                if (lastRepair.size() == Length) {
+                  lastRepair.set(Length - 1, false);
                 } else {
-                  firstRepair.add(false);
+                  lastRepair.add(false);
                 }
               }
             }
@@ -398,6 +404,10 @@ public abstract class Statistics<T extends Serializable> {
         lastRepair.add(true);
       }
       reverseDP.add(dp);
+      if (reverseDP.size() > 1024){
+        reverseDP.remove(0);
+        lastRepair.remove(0);
+      }
     }
     validityErrors = Length;
     for (int m = 0; m < Length; m++) {

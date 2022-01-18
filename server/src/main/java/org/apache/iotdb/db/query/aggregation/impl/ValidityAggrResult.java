@@ -63,43 +63,6 @@ public class ValidityAggrResult extends AggregateResult {
   @Override
   public void updateResultFromPageData(
       IBatchDataIterator batchIterator, long minBound, long maxBound) throws IOException {
-    if (statisticsInstance.getTimeWindow().size() > 1024) {
-      statisticsInstance.setTimeWindow(
-          statisticsInstance
-              .getTimeWindow()
-              .subList(
-                  statisticsInstance.getTimeWindow().size() - 1024,
-                  statisticsInstance.getTimeWindow().size() - 1));
-      statisticsInstance.setValueWindow(
-          statisticsInstance
-              .getValueWindow()
-              .subList(
-                  statisticsInstance.getValueWindow().size() - 1024,
-                  statisticsInstance.getValueWindow().size() - 1));
-      statisticsInstance.setLastRepair(
-          statisticsInstance
-              .getLastRepair()
-              .subList(
-                  statisticsInstance.getLastRepair().size() - 1024,
-                  statisticsInstance.getLastRepair().size() - 1));
-      statisticsInstance.setFirstRepair(
-          statisticsInstance
-              .getFirstRepair()
-              .subList(
-                  statisticsInstance.getFirstRepair().size() - 1024,
-                  statisticsInstance.getFirstRepair().size() - 1));
-      statisticsInstance.setReverseDP(
-          statisticsInstance
-              .getReverseDP()
-              .subList(
-                  statisticsInstance.getReverseDP().size() - 1024,
-                  statisticsInstance.getReverseDP().size() - 1));
-      statisticsInstance.setDP(
-          statisticsInstance
-              .getDP()
-              .subList(
-                  statisticsInstance.getDP().size() - 1024, statisticsInstance.getDP().size() - 1));
-    }
     while (batchIterator.hasNext(minBound, maxBound)) {
       if (batchIterator.currentTime() >= maxBound || batchIterator.currentTime() < minBound) {
         break;
