@@ -282,7 +282,7 @@ public abstract class Statistics<T extends Serializable> {
         smin = this.speedAVG - 3 * this.speedSTD;
         updateDP(index, smax, smin);
       }
-      if (index > 1024){
+      if (index > 1024) {
         timeWindow.remove(0);
         valueWindow.remove(0);
         DP.remove(0);
@@ -404,17 +404,27 @@ public abstract class Statistics<T extends Serializable> {
         lastRepair.add(true);
       }
       reverseDP.add(dp);
-      if (reverseDP.size() > 1024){
-        reverseDP.remove(0);
-        lastRepair.remove(0);
+      if (reverseDP.size() > 1024) {
+        reverseDP.remove(reverseDP.size() - 1);
+        lastRepair.remove(lastRepair.size() - 1);
+        break;
       }
     }
-    validityErrors = Length;
+    int validityErrorsTemp = Length;
+    if (Length > 1024) {
+      Length = 1024;
+    }
     for (int m = 0; m < Length; m++) {
-      if (validityErrors > DP.get(m) + reverseDP.get(Length - 1 - m)) {
-        validityErrors = DP.get(m) + reverseDP.get(Length - 1 - m);
+      if (validityErrorsTemp > DP.get(m) + reverseDP.get(Length - 1 - m)) {
+        validityErrorsTemp = DP.get(m) + reverseDP.get(Length - 1 - m);
         indexLastRepaired = m;
       }
+    }
+    validityErrors += validityErrorsTemp;
+    if (this.indexLastRepaired == -1) {
+      this.repairSelfFirst = false;
+      this.repairSelfLast = false;
+      return;
     }
     if (this.firstRepair.get(this.indexLastRepaired)) {
       this.repairSelfFirst = false;
@@ -660,7 +670,7 @@ public abstract class Statistics<T extends Serializable> {
   }
 
   public double getValidity() {
-    return 1 - validityErrors / count;
+    return 1 - (double) validityErrors / count;
   }
 
   public void setValidityErrors(int validityErrors) {
@@ -728,11 +738,17 @@ public abstract class Statistics<T extends Serializable> {
   public boolean checkMergeable(Statistics<? extends Serializable> statisticsMerge) {
     if (this.count == 0) {
       return true;
-    } else if (this.repairSelfLast && this.repairSelfFirst) {
+    } else if (this.repairSelfLast && statisticsMerge.repairSelfFirst) {
       double speed =
           (this.endValue - statisticsMerge.startValue) / (this.endTime - statisticsMerge.startTime);
-      double smax = this.speedAVG + 3 * this.speedSTD;
-      double smin = this.speedAVG - 3 * this.speedSTD;
+      double smax =
+          Math.max(
+              this.speedAVG + 3 * this.speedSTD,
+              statisticsMerge.speedAVG + 3 * statisticsMerge.speedSTD);
+      double smin =
+          Math.min(
+              this.speedAVG - 3 * this.speedSTD,
+              statisticsMerge.speedAVG - 3 * statisticsMerge.speedSTD);
       return speed <= smax && speed >= smin;
     } else {
       return false;
