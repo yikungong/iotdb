@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+// TODO: update
 public class ValidityAllAggrResult extends AggregateResult {
   private TSDataType seriesDataType;
   private double validity = 0.0;
@@ -70,6 +71,8 @@ public class ValidityAllAggrResult extends AggregateResult {
       statisticsInstance.update(batchIterator.currentTime(), (double) batchIterator.currentValue());
       batchIterator.next();
     }
+    statisticsInstance.updateDP();
+    statisticsInstance.updateReverseDP();
   }
 
   @Override
@@ -81,6 +84,8 @@ public class ValidityAllAggrResult extends AggregateResult {
         statisticsInstance.update(timestamps[i], (double) values[i]);
       }
     }
+    statisticsInstance.updateDP();
+    statisticsInstance.updateReverseDP();
   }
 
   @Override
@@ -90,6 +95,8 @@ public class ValidityAllAggrResult extends AggregateResult {
       statisticsInstance.update(timestamps[i], (double) valueIterator.next());
       i++;
     }
+    statisticsInstance.updateDP();
+    statisticsInstance.updateReverseDP();
   }
 
   @Override

@@ -160,9 +160,9 @@ public class ValidityAggrResult extends AggregateResult {
   }
 
   public boolean checkMergeable(Statistics statistics) {
-    if (true) {
-      return true;
-    }
+//    if (true) {
+//      return true;
+//    }
     return statisticsInstance.checkMergeable(statistics);
   }
 }
