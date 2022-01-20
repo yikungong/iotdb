@@ -145,6 +145,9 @@ public class TSFileConfig implements Serializable {
   private double bloomFilterErrorRate = 0.05;
   /** The amount of data iterate each time */
   private int batchSize = 1000;
+  /** The constraints of Value*/
+  private double xMax = Double.MAX_VALUE;
+  private double xmin = Double.MIN_VALUE;
 
   public TSFileConfig() {}
 
@@ -410,5 +413,21 @@ public class TSFileConfig implements Serializable {
 
   public void setBatchSize(int batchSize) {
     this.batchSize = batchSize;
+  }
+
+  public double getXMax() {
+    return xMax;
+  }
+
+  public void setXMax(double xMax) {
+    this.xMax = xMax;
+  }
+
+  public double getXMin() {
+    return xmin;
+  }
+
+  public void setXMin(double xmin) {
+    this.xmin = xmin;
   }
 }

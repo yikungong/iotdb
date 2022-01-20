@@ -18,6 +18,8 @@
  */
 package org.apache.iotdb.tsfile.file.metadata.statistics;
 
+import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
+import org.apache.iotdb.tsfile.common.conf.TSFileDescriptor;
 import org.apache.iotdb.tsfile.exception.filter.StatisticsClassException;
 import org.apache.iotdb.tsfile.exception.write.UnknownColumnTypeException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
@@ -59,6 +61,7 @@ public abstract class Statistics<T extends Serializable> {
   private int count = 0;
 
   private int indexEnd = 0;
+  private final TSFileConfig tsFileConfig = TSFileDescriptor.getInstance().getConfig();
   private int indexLastRepaired = -1;
   private int validityErrors = 0;
   private double speedAVG = 0;
@@ -361,6 +364,8 @@ public abstract class Statistics<T extends Serializable> {
   }
 
   public void updateDP() {
+    double xMax = tsFileConfig.getXMax();
+    double xMin = tsFileConfig.getXMin();
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
     firstRepair.add(false);
@@ -370,7 +375,13 @@ public abstract class Statistics<T extends Serializable> {
       Double value = valueWindow.get(index);
       int dp = -1;
       boolean find = false;
+      if (value < xMin || value > xMax){
+        continue;
+      }
       for (int i = 0; i < index; i++) {
+        if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax){
+          continue;
+        }
         if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
             && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
           find = true;
@@ -510,6 +521,10 @@ public abstract class Statistics<T extends Serializable> {
   }
 
   public void updateReverseDP() {
+
+    double xMax = tsFileConfig.getXMax();
+    double xMin = tsFileConfig.getXMin();
+
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
 
@@ -523,7 +538,13 @@ public abstract class Statistics<T extends Serializable> {
       Double value = valueWindow.get(j);
       int dp = -1;
       boolean find = false;
+      if (value < xMin || value > xMax){
+        continue;
+      }
       for (int i = Length - 1; i > j; i--) {
+        if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax){
+          continue;
+        }
         int index = Length - i - 1;
         if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
             && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
