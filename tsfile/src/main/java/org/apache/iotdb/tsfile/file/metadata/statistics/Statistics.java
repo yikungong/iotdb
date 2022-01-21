@@ -312,32 +312,59 @@ public abstract class Statistics<T extends Serializable> {
     //    }
   }
 
-  public void updateDP(int index, double smax, double smin) {
-    Long time = timeWindow.get(index);
-    Double value = valueWindow.get(index);
-    int dp = -1;
-    boolean find = false;
-    for (int i = 0; i < index; i++) {
-      if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
-          && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
-        find = true;
-        if (dp == -1) {
-          dp = DP.get(i) + index - i - 1;
-          if (firstRepair.get(i)) {
-            if (firstRepair.size() == index + 1) {
-              firstRepair.set(index, true);
-            } else {
-              firstRepair.add(true);
-            }
+  // 更新ValidityAll
+  public void updateAll(long time, double value) {
+    update(time);
+    updateStats(value);
+    // update window
+
+    int index = timeWindow.size();
+    timeWindow.add(time);
+    valueWindow.add(value);
+    endValue = value;
+    if (index <= 1) {
+      return;
+    }
+    double timeLastInterval = timeWindow.get(index) - timeWindow.get(index - 1);
+    if (timeLastInterval != 0) {
+      double speedNow = (valueWindow.get(index) - valueWindow.get(index - 1)) / timeLastInterval;
+      updateAVGSTD(speedNow);
+    }
+  }
+
+  public void updateDPAll() {
+    double xMax = tsFileConfig.getXMax();
+    double xMin = tsFileConfig.getXMin();
+
+    System.out.println("xMax : " + xMax);
+    double smax = this.speedAVG + 3 * this.speedSTD;
+    double smin = this.speedAVG - 3 * this.speedSTD;
+    firstRepair.add(false);
+    DP.add(0);
+    for (int index = 1; index < timeWindow.size(); index++) {
+      Long time = timeWindow.get(index);
+      Double value = valueWindow.get(index);
+      int dp = -1;
+      boolean find = false;
+      if (value < xMin || value > xMax) {
+        dp = 1000000;
+        firstRepair.add(true);
+        DP.add(dp);
+        continue;
+      }
+      for (int i = 0; i < index; i++) {
+        if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax) {
+          if (firstRepair.size() == index + 1) {
+            firstRepair.set(index, true);
           } else {
-            if (firstRepair.size() == index + 1) {
-              firstRepair.set(index, false);
-            } else {
-              firstRepair.add(false);
-            }
+            firstRepair.add(true);
           }
-        } else {
-          if (DP.get(i) + index - i - 1 < dp) {
+          continue;
+        }
+        if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
+            && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
+          find = true;
+          if (dp == -1) {
             dp = DP.get(i) + index - i - 1;
             if (firstRepair.get(i)) {
               if (firstRepair.size() == index + 1) {
@@ -352,15 +379,32 @@ public abstract class Statistics<T extends Serializable> {
                 firstRepair.add(false);
               }
             }
+          } else {
+            if (DP.get(i) + index - i - 1 < dp) {
+              dp = DP.get(i) + index - i - 1;
+              if (firstRepair.get(i)) {
+                if (firstRepair.size() == index + 1) {
+                  firstRepair.set(index, true);
+                } else {
+                  firstRepair.add(true);
+                }
+              } else {
+                if (firstRepair.size() == index + 1) {
+                  firstRepair.set(index, false);
+                } else {
+                  firstRepair.add(false);
+                }
+              }
+            }
           }
         }
       }
+      if (!find) {
+        dp = index;
+        firstRepair.add(true);
+      }
+      DP.add(dp);
     }
-    if (!find) {
-      dp = index;
-      firstRepair.add(true);
-    }
-    DP.add(dp);
   }
 
   public void updateDP() {
@@ -448,19 +492,38 @@ public abstract class Statistics<T extends Serializable> {
     }
   }
 
-  public void updateReverseDP(int Length, double smax, double smin) {
+  public void updateReverseDPAll() {
+    double xMax = tsFileConfig.getXMax();
+    double xMin = tsFileConfig.getXMin();
+
+    double smax = this.speedAVG + 3 * this.speedSTD;
+    double smin = this.speedAVG - 3 * this.speedSTD;
+
     lastRepair.add(false);
     reverseDP.add(0);
 
+    int Length = this.timeWindow.size();
+
     for (int j = Length - 2; j >= 0; j--) {
-      if (j == Length / 2) {
-        System.out.println("half");
-      }
       Long time = timeWindow.get(j);
       Double value = valueWindow.get(j);
       int dp = -1;
       boolean find = false;
+      if (value < xMin || value > xMax) {
+        dp = 1000000;
+        lastRepair.add(true);
+        reverseDP.add(dp);
+        continue;
+      }
       for (int i = Length - 1; i > j; i--) {
+        if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax) {
+          if (lastRepair.size() == Length - j) {
+            lastRepair.set(Length - j - 1, true);
+          } else {
+            lastRepair.add(true);
+          }
+          continue;
+        }
         int index = Length - i - 1;
         if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
             && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
@@ -483,7 +546,7 @@ public abstract class Statistics<T extends Serializable> {
           } else {
             if (reverseDP.get(index) + i - j - 1 < dp) {
               dp = reverseDP.get(index) + i - j - 1;
-              if (lastRepair.get(i)) {
+              if (lastRepair.get(index)) {
                 if (lastRepair.size() == Length) {
                   lastRepair.set(Length - 1, true);
                 } else {
@@ -505,11 +568,6 @@ public abstract class Statistics<T extends Serializable> {
         lastRepair.add(true);
       }
       reverseDP.add(dp);
-      if (reverseDP.size() > windowSize) {
-        reverseDP.remove(reverseDP.size() - 1);
-        lastRepair.remove(lastRepair.size() - 1);
-        break;
-      }
     }
     int validityErrorsTemp = Length;
     if (Length > windowSize) {
@@ -521,7 +579,7 @@ public abstract class Statistics<T extends Serializable> {
         indexLastRepaired = m;
       }
     }
-    validityErrors = validityErrorsTemp;
+    validityErrors += validityErrorsTemp;
     if (this.indexLastRepaired == -1) {
       this.repairSelfFirst = false;
       this.repairSelfLast = false;

@@ -115,10 +115,10 @@ public class DoubleStatisticsTest {
 
     double smax = doubleStats.getSpeedAVG() + 3 * doubleStats.getSpeedSTD();
     double smin = doubleStats.getSpeedAVG() - 3 * doubleStats.getSpeedSTD();
-    doubleStats.updateReverseDP((int) doubleStats.getCount(), smax, smin);
+    doubleStats.updateReverseDPAll();
 
     assertEquals(1.0, doubleStats.getValidity(), maxError);
     doubleStats.mergeStatistics(doubleStatsMerge);
-    doubleStats.updateReverseDP(doubleStats.getTimeWindow().size(), smax, smin);
+    doubleStats.updateReverseDPAll();
   }
 }

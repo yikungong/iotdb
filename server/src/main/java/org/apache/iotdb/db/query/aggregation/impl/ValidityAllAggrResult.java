@@ -68,11 +68,12 @@ public class ValidityAllAggrResult extends AggregateResult {
       if (batchIterator.currentTime() >= maxBound || batchIterator.currentTime() < minBound) {
         break;
       }
-      statisticsInstance.update(batchIterator.currentTime(), (double) batchIterator.currentValue());
+      statisticsInstance.updateAll(
+          batchIterator.currentTime(), (double) batchIterator.currentValue());
       batchIterator.next();
     }
-    statisticsInstance.updateDP();
-    statisticsInstance.updateReverseDP();
+    statisticsInstance.updateDPAll();
+    statisticsInstance.updateReverseDPAll();
   }
 
   @Override
@@ -81,22 +82,22 @@ public class ValidityAllAggrResult extends AggregateResult {
     Object[] values = dataReader.getValuesInTimestamps(timestamps, length);
     for (int i = 0; i < length; i++) {
       if (values[i] != null) {
-        statisticsInstance.update(timestamps[i], (double) values[i]);
+        statisticsInstance.updateAll(timestamps[i], (double) values[i]);
       }
     }
-    statisticsInstance.updateDP();
-    statisticsInstance.updateReverseDP();
+    statisticsInstance.updateDPAll();
+    statisticsInstance.updateReverseDPAll();
   }
 
   @Override
   public void updateResultUsingValues(long[] timestamps, int length, ValueIterator valueIterator) {
     int i = 0;
     while (valueIterator.hasNext() && i < length) {
-      statisticsInstance.update(timestamps[i], (double) valueIterator.next());
+      statisticsInstance.updateAll(timestamps[i], (double) valueIterator.next());
       i++;
     }
-    statisticsInstance.updateDP();
-    statisticsInstance.updateReverseDP();
+    statisticsInstance.updateDPAll();
+    statisticsInstance.updateReverseDPAll();
   }
 
   @Override
