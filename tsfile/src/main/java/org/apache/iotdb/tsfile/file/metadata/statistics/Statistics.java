@@ -366,6 +366,8 @@ public abstract class Statistics<T extends Serializable> {
   public void updateDP() {
     double xMax = tsFileConfig.getXMax();
     double xMin = tsFileConfig.getXMin();
+
+    System.out.println("xMax : " + xMax);
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
     firstRepair.add(false);
@@ -375,11 +377,24 @@ public abstract class Statistics<T extends Serializable> {
       Double value = valueWindow.get(index);
       int dp = -1;
       boolean find = false;
-      if (value < xMin || value > xMax){
+      if (value < xMin || value > xMax) {
+        dp = 1000000;
+        firstRepair.add(true);
+        DP.add(dp);
+        if (DP.size() > windowSize) {
+          DP.remove(0);
+          firstRepair.remove(0);
+          break;
+        }
         continue;
       }
       for (int i = 0; i < index; i++) {
-        if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax){
+        if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax) {
+          if (firstRepair.size() == index + 1) {
+            firstRepair.set(index, true);
+          } else {
+            firstRepair.add(true);
+          }
           continue;
         }
         if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
@@ -538,11 +553,24 @@ public abstract class Statistics<T extends Serializable> {
       Double value = valueWindow.get(j);
       int dp = -1;
       boolean find = false;
-      if (value < xMin || value > xMax){
+      if (value < xMin || value > xMax) {
+        dp = 1000000;
+        lastRepair.add(true);
+        reverseDP.add(dp);
+        if (reverseDP.size() > windowSize) {
+          reverseDP.remove(0);
+          lastRepair.remove(0);
+          break;
+        }
         continue;
       }
       for (int i = Length - 1; i > j; i--) {
-        if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax){
+        if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax) {
+          if (lastRepair.size() == Length - j) {
+            lastRepair.set(Length - j - 1, true);
+          } else {
+            lastRepair.add(true);
+          }
           continue;
         }
         int index = Length - i - 1;

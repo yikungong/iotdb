@@ -975,21 +975,19 @@ public class IoTDBDescriptor {
                     Integer.toString(
                         TSFileDescriptor.getInstance().getConfig().getGroupSizeInByte()))));
     TSFileDescriptor.getInstance()
-            .getConfig()
-            .setXMax(
-                    Double.parseDouble(
-                            properties.getProperty(
-                                    "xMax",
-                                    Double.toString(
-                                            TSFileDescriptor.getInstance().getConfig().getXMax()))));
+        .getConfig()
+        .setXMax(
+            Double.parseDouble(
+                properties.getProperty(
+                    "xMax",
+                    Double.toString(TSFileDescriptor.getInstance().getConfig().getXMax()))));
     TSFileDescriptor.getInstance()
-            .getConfig()
-            .setXMin(
-                    Double.parseDouble(
-                            properties.getProperty(
-                                    "xMin",
-                                    Double.toString(
-                                            TSFileDescriptor.getInstance().getConfig().getXMin()))));
+        .getConfig()
+        .setXMin(
+            Double.parseDouble(
+                properties.getProperty(
+                    "xMin",
+                    Double.toString(TSFileDescriptor.getInstance().getConfig().getXMin()))));
     TSFileDescriptor.getInstance()
         .getConfig()
         .setPageSizeInByte(

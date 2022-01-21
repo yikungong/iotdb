@@ -145,8 +145,9 @@ public class TSFileConfig implements Serializable {
   private double bloomFilterErrorRate = 0.05;
   /** The amount of data iterate each time */
   private int batchSize = 1000;
-  /** The constraints of Value*/
+  /** The constraints of Value */
   private double xMax = Double.MAX_VALUE;
+
   private double xmin = Double.MIN_VALUE;
 
   public TSFileConfig() {}
