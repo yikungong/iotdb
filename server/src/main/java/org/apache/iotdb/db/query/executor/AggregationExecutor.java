@@ -263,6 +263,12 @@ public class AggregationExecutor {
     while (seriesReader.hasNextFile()) {
       while (seriesReader.hasNextChunk()) {
         while (seriesReader.hasNextPage()) {
+          if (seriesReader.canUseCurrentPageStatistics()) {
+            Statistics pageStatistic = seriesReader.currentPageStatistics();
+            if (validityAllAggrResult.checkMergeable(pageStatistic)) {
+              System.out.println("not Merge");
+            }
+          }
           IBatchDataIterator batchDataIterator = seriesReader.nextPage().getBatchDataIterator();
           validityAllAggrResult.updateResultFromPageData(batchDataIterator);
           batchDataIterator.reset();
@@ -301,7 +307,6 @@ public class AggregationExecutor {
             null,
             null,
             true);
-    boolean mergeable = true;
     while (seriesReader.hasNextFile()) {
       // cal by file statistics
       //      if (seriesReader.canUseCurrentFileStatistics() && mergeable) {
@@ -331,7 +336,7 @@ public class AggregationExecutor {
         //        }
         while (seriesReader.hasNextPage()) {
           // cal by page statistics
-          if (seriesReader.canUseCurrentPageStatistics() && mergeable) {
+          if (seriesReader.canUseCurrentPageStatistics()) {
             Statistics pageStatistic = seriesReader.currentPageStatistics();
             if (validityAggrResult.checkMergeable(pageStatistic)) {
               validityAggrResult.updateResultFromStatistics(pageStatistic);
@@ -342,7 +347,7 @@ public class AggregationExecutor {
           }
           IBatchDataIterator batchDataIterator = seriesReader.nextPage().getBatchDataIterator();
           validityAggrResult.updateResultFromPageData(batchDataIterator);
-          mergeable = true;
+          validityAggrResult.updateDPAndReverseDP();
           batchDataIterator.reset();
         }
       }

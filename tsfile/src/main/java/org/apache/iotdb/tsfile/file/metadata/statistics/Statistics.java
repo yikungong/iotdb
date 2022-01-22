@@ -694,15 +694,11 @@ public abstract class Statistics<T extends Serializable> {
       return;
     }
     if (this.firstRepair.size() <= this.indexLastRepaired) {
-      this.repairSelfFirst = false;
-    } else if (this.firstRepair.get(this.indexLastRepaired)) {
-      this.repairSelfFirst = false;
-    }
+      this.repairSelfFirst = true;
+    } else this.repairSelfFirst = !this.firstRepair.get(this.indexLastRepaired);
     if (this.lastRepair.size() <= this.indexLastRepaired) {
-      this.repairSelfLast = false;
-    } else if (this.lastRepair.get(this.indexLastRepaired)) {
-      this.repairSelfLast = false;
-    }
+      this.repairSelfLast = true;
+    } else this.repairSelfLast = !this.lastRepair.get(this.indexLastRepaired);
   }
 
   public void updateAVGSTD(double speedNow) {

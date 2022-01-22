@@ -60,6 +60,11 @@ public class ValidityAggrResult extends AggregateResult {
     updateResultFromPageData(batchIterator, Long.MIN_VALUE, Long.MAX_VALUE);
   }
 
+  public void updateDPAndReverseDP() {
+    statisticsInstance.updateDP();
+    statisticsInstance.updateReverseDP();
+  }
+
   @Override
   public void updateResultFromPageData(
       IBatchDataIterator batchIterator, long minBound, long maxBound) throws IOException {
@@ -70,8 +75,6 @@ public class ValidityAggrResult extends AggregateResult {
       statisticsInstance.update(batchIterator.currentTime(), (double) batchIterator.currentValue());
       batchIterator.next();
     }
-    statisticsInstance.updateDP();
-    statisticsInstance.updateReverseDP();
   }
 
   @Override
@@ -83,8 +86,6 @@ public class ValidityAggrResult extends AggregateResult {
         statisticsInstance.update(timestamps[i], (double) values[i]);
       }
     }
-    statisticsInstance.updateDP();
-    statisticsInstance.updateReverseDP();
   }
 
   @Override
@@ -94,8 +95,6 @@ public class ValidityAggrResult extends AggregateResult {
       statisticsInstance.update(timestamps[i], (double) valueIterator.next());
       i++;
     }
-    statisticsInstance.updateDP();
-    statisticsInstance.updateReverseDP();
   }
 
   @Override
