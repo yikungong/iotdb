@@ -64,6 +64,7 @@ public abstract class Statistics<T extends Serializable> {
   private final TSFileConfig tsFileConfig = TSFileDescriptor.getInstance().getConfig();
   private int indexLastRepaired = -1;
   private int validityErrors = 0;
+  private int validityErrorsLastMerge = 0;
   private double speedAVG = 0;
   private double speedSTD = 0;
   private int windowSize = 2048;
@@ -136,7 +137,7 @@ public abstract class Statistics<T extends Serializable> {
         + 16 // startTime, endTime
         + 24 // validity, speed max, speed min
         + 16 // startValue, endValue
-        + 8 // repairFirst and last
+        + 2 // repairFirst and last
         + getStatsSize();
   }
 
@@ -232,9 +233,28 @@ public abstract class Statistics<T extends Serializable> {
       }
       // must be sure no overlap between two statistics
       this.count += stats.count;
-      this.speedAVG = stats.speedAVG;
-      this.speedSTD = stats.speedSTD;
+      //      this.speedAVG = stats.speedAVG;
+      //      this.speedSTD = stats.speedSTD;
+      if (this.count == 0) {
+        this.speedAVG = stats.speedAVG;
+        this.speedSTD = stats.speedSTD;
+      } else {
+        double newSpeedAVG =
+            (this.count * this.speedAVG + stats.count * stats.speedAVG)
+                / (this.count + stats.count);
+        double newSpeedSTD =
+            Math.sqrt(
+                ((this.count - 1) * Math.pow(this.speedSTD, 2)
+                        + (stats.count - 1) * Math.pow(stats.speedSTD, 2)
+                        + (this.count * stats.count)
+                            * (Math.pow(this.speedAVG - stats.speedAVG, 2))
+                            / (this.count + stats.count))
+                    / (this.count + stats.count - 1));
+        this.speedSTD = newSpeedSTD;
+        this.speedAVG = newSpeedAVG;
+      }
       this.validityErrors += stats.validityErrors;
+      this.validityErrorsLastMerge = this.validityErrors;
       mergeStatisticsValue((Statistics<T>) stats);
       isEmpty = false;
     } else {
@@ -277,6 +297,7 @@ public abstract class Statistics<T extends Serializable> {
     valueWindow.add(value);
     endValue = value;
     if (index <= 1) {
+      startValue = value;
       return;
     }
     double timeLastInterval = timeWindow.get(index) - timeWindow.get(index - 1);
@@ -288,28 +309,6 @@ public abstract class Statistics<T extends Serializable> {
       timeWindow.remove(0);
       valueWindow.remove(0);
     }
-    //    if (index > 0) {
-    //      double timeLastInterval = timeWindow.get(index) - timeWindow.get(index - 1);
-    //      if (timeLastInterval != 0) {
-    //        double speedNow = (valueWindow.get(index) - valueWindow.get(index - 1)) /
-    // timeLastInterval;
-    //        updateAVGSTD(speedNow);
-    //        smax = this.speedAVG + 3 * this.speedSTD;
-    //        smin = this.speedAVG - 3 * this.speedSTD;
-    //        updateDP(index, smax, smin);
-    //      }
-    //      if (index > windowSize) {
-    //        timeWindow.remove(0);
-    //        valueWindow.remove(0);
-    //        DP.remove(0);
-    //        firstRepair.remove(0);
-    //      }
-    //    } else {
-    //      startValue = value;
-    //      endValue = value;
-    //      firstRepair.add(false);
-    //      DP.add(0);
-    //    }
   }
 
   // 更新ValidityAll
@@ -323,6 +322,7 @@ public abstract class Statistics<T extends Serializable> {
     valueWindow.add(value);
     endValue = value;
     if (index <= 1) {
+      startValue = value;
       return;
     }
     double timeLastInterval = timeWindow.get(index) - timeWindow.get(index - 1);
@@ -336,9 +336,10 @@ public abstract class Statistics<T extends Serializable> {
     double xMax = tsFileConfig.getXMax();
     double xMin = tsFileConfig.getXMin();
 
-    System.out.println("xMax : " + xMax);
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
+    //    double smax = 1;
+    //    double smin = -1;
     firstRepair.add(false);
     DP.add(0);
     for (int index = 1; index < timeWindow.size(); index++) {
@@ -347,22 +348,20 @@ public abstract class Statistics<T extends Serializable> {
       int dp = -1;
       boolean find = false;
       if (value < xMin || value > xMax) {
-        dp = 1000000;
+        dp = 100000000;
         firstRepair.add(true);
         DP.add(dp);
         continue;
       }
       for (int i = 0; i < index; i++) {
         if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax) {
-          if (firstRepair.size() == index + 1) {
-            firstRepair.set(index, true);
-          } else {
-            firstRepair.add(true);
-          }
           continue;
         }
-        if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
-            && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
+        if (time - timeWindow.get(i) == 0) {
+          continue;
+        }
+        double speedNow = (value - valueWindow.get(i)) / (time - timeWindow.get(i));
+        if (speedNow <= smax && speedNow >= smin) {
           find = true;
           if (dp == -1) {
             dp = DP.get(i) + index - i - 1;
@@ -411,9 +410,11 @@ public abstract class Statistics<T extends Serializable> {
     double xMax = tsFileConfig.getXMax();
     double xMin = tsFileConfig.getXMin();
 
-    System.out.println("xMax : " + xMax);
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
+    //    double smax = 1;
+    //    double smin = -1;
+
     firstRepair.add(false);
     DP.add(0);
     for (int index = 1; index < timeWindow.size(); index++) {
@@ -434,15 +435,13 @@ public abstract class Statistics<T extends Serializable> {
       }
       for (int i = 0; i < index; i++) {
         if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax) {
-          if (firstRepair.size() == index + 1) {
-            firstRepair.set(index, true);
-          } else {
-            firstRepair.add(true);
-          }
           continue;
         }
-        if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
-            && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
+        if (time - timeWindow.get(i) == 0) {
+          continue;
+        }
+        double speedNow = (value - valueWindow.get(i)) / (time - timeWindow.get(i));
+        if (speedNow <= smax && speedNow >= smin) {
           find = true;
           if (dp == -1) {
             dp = DP.get(i) + index - i - 1;
@@ -485,9 +484,8 @@ public abstract class Statistics<T extends Serializable> {
       }
       DP.add(dp);
       if (DP.size() > windowSize) {
-        DP.remove(0);
-        firstRepair.remove(0);
-        break;
+        int a = DP.remove(0);
+        boolean b = firstRepair.remove(0);
       }
     }
   }
@@ -498,6 +496,8 @@ public abstract class Statistics<T extends Serializable> {
 
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
+    //    double smax = 1;
+    //    double smin = -1;
 
     lastRepair.add(false);
     reverseDP.add(0);
@@ -510,23 +510,21 @@ public abstract class Statistics<T extends Serializable> {
       int dp = -1;
       boolean find = false;
       if (value < xMin || value > xMax) {
-        dp = 1000000;
+        dp = 100000000;
         lastRepair.add(true);
         reverseDP.add(dp);
         continue;
       }
       for (int i = Length - 1; i > j; i--) {
         if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax) {
-          if (lastRepair.size() == Length - j) {
-            lastRepair.set(Length - j - 1, true);
-          } else {
-            lastRepair.add(true);
-          }
           continue;
         }
         int index = Length - i - 1;
-        if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
-            && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
+        if (time - timeWindow.get(i) == 0) {
+          continue;
+        }
+        double speedNow = (value - valueWindow.get(i)) / (time - timeWindow.get(i));
+        if (speedNow <= smax && speedNow >= smin) {
           find = true;
           if (dp == -1) {
             dp = reverseDP.get(index) + i - j - 1;
@@ -579,7 +577,7 @@ public abstract class Statistics<T extends Serializable> {
         indexLastRepaired = m;
       }
     }
-    validityErrors += validityErrorsTemp;
+    validityErrors = validityErrorsTemp;
     if (this.indexLastRepaired == -1) {
       this.repairSelfFirst = false;
       this.repairSelfLast = false;
@@ -600,6 +598,8 @@ public abstract class Statistics<T extends Serializable> {
 
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
+    //    double smax = 1;
+    //    double smin = -1;
 
     lastRepair.add(false);
     reverseDP.add(0);
@@ -616,24 +616,20 @@ public abstract class Statistics<T extends Serializable> {
         lastRepair.add(true);
         reverseDP.add(dp);
         if (reverseDP.size() > windowSize) {
-          reverseDP.remove(0);
-          lastRepair.remove(0);
           break;
         }
         continue;
       }
       for (int i = Length - 1; i > j; i--) {
         if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax) {
-          if (lastRepair.size() == Length - j) {
-            lastRepair.set(Length - j - 1, true);
-          } else {
-            lastRepair.add(true);
-          }
           continue;
         }
         int index = Length - i - 1;
-        if ((value - valueWindow.get(i)) / (time - timeWindow.get(i)) <= smax
-            && (value - valueWindow.get(i)) / (time - timeWindow.get(i)) >= smin) {
+        if ((time - timeWindow.get(i) == 0)) {
+          continue;
+        }
+        double speedNow = (value - valueWindow.get(i)) / (time - timeWindow.get(i));
+        if (speedNow <= smax && speedNow >= smin) {
           find = true;
           if (dp == -1) {
             dp = reverseDP.get(index) + i - j - 1;
@@ -676,8 +672,8 @@ public abstract class Statistics<T extends Serializable> {
       }
       reverseDP.add(dp);
       if (reverseDP.size() > windowSize) {
-        reverseDP.remove(reverseDP.size() - 1);
-        lastRepair.remove(lastRepair.size() - 1);
+        int a = reverseDP.remove(reverseDP.size() - 1);
+        boolean b = lastRepair.remove(lastRepair.size() - 1);
         break;
       }
     }
@@ -691,16 +687,20 @@ public abstract class Statistics<T extends Serializable> {
         indexLastRepaired = m;
       }
     }
-    validityErrors += validityErrorsTemp;
+    validityErrors = validityErrorsLastMerge + validityErrorsTemp;
     if (this.indexLastRepaired == -1) {
       this.repairSelfFirst = false;
       this.repairSelfLast = false;
       return;
     }
-    if (this.firstRepair.get(this.indexLastRepaired)) {
+    if (this.firstRepair.size() <= this.indexLastRepaired) {
+      this.repairSelfFirst = false;
+    } else if (this.firstRepair.get(this.indexLastRepaired)) {
       this.repairSelfFirst = false;
     }
-    if (this.lastRepair.get(this.indexLastRepaired)) {
+    if (this.lastRepair.size() <= this.indexLastRepaired) {
+      this.repairSelfLast = false;
+    } else if (this.lastRepair.get(this.indexLastRepaired)) {
       this.repairSelfLast = false;
     }
   }
@@ -1009,19 +1009,28 @@ public abstract class Statistics<T extends Serializable> {
   public boolean checkMergeable(Statistics<? extends Serializable> statisticsMerge) {
     if (this.count == 0) {
       return true;
+    } else if (this.endTime > statisticsMerge.startTime) {
+      validityMerge = false;
+      return false;
     } else if (this.repairSelfLast && statisticsMerge.repairSelfFirst) {
       double speed =
           (this.endValue - statisticsMerge.startValue) / (this.endTime - statisticsMerge.startTime);
-      double smax =
-          Math.max(
-              this.speedAVG + 3 * this.speedSTD,
-              statisticsMerge.speedAVG + 3 * statisticsMerge.speedSTD);
-      double smin =
-          Math.min(
-              this.speedAVG - 3 * this.speedSTD,
-              statisticsMerge.speedAVG - 3 * statisticsMerge.speedSTD);
-      return speed <= smax && speed >= smin;
+      //      double smax =
+      //          Math.max(
+      //              this.speedAVG + 3 * this.speedSTD,
+      //              statisticsMerge.speedAVG + 3 * statisticsMerge.speedSTD);
+      //      double smin =
+      //          Math.min(
+      //              this.speedAVG - 3 * this.speedSTD,
+      //              statisticsMerge.speedAVG - 3 * statisticsMerge.speedSTD);
+      double smax = tsFileConfig.getsMax();
+      double smin = tsFileConfig.getSmin();
+      //      double smax = 1;
+      //      double smin = -1;
+      validityMerge = speed <= smax && speed >= smin;
+      return validityMerge;
     } else {
+      validityMerge = false;
       return false;
     }
   }

@@ -148,7 +148,11 @@ public class TSFileConfig implements Serializable {
   /** The constraints of Value */
   private double xMax = Double.MAX_VALUE;
 
-  private double xmin = Double.MIN_VALUE;
+  private double xmin = -Double.MAX_VALUE + 1;
+  /** The constraints of Speed */
+  private double sMax = Double.MAX_VALUE;
+
+  private double smin = -Double.MAX_VALUE + 1;
 
   public TSFileConfig() {}
 
@@ -430,5 +434,21 @@ public class TSFileConfig implements Serializable {
 
   public void setXMin(double xmin) {
     this.xmin = xmin;
+  }
+
+  public double getsMax() {
+    return sMax;
+  }
+
+  public void setsMax(double sMax) {
+    this.sMax = sMax;
+  }
+
+  public double getSmin() {
+    return smin;
+  }
+
+  public void setSmin(double smin) {
+    this.smin = smin;
   }
 }

@@ -990,6 +990,20 @@ public class IoTDBDescriptor {
                     Double.toString(TSFileDescriptor.getInstance().getConfig().getXMin()))));
     TSFileDescriptor.getInstance()
         .getConfig()
+        .setsMax(
+            Double.parseDouble(
+                properties.getProperty(
+                    "sMax",
+                    Double.toString(TSFileDescriptor.getInstance().getConfig().getsMax()))));
+    TSFileDescriptor.getInstance()
+        .getConfig()
+        .setSmin(
+            Double.parseDouble(
+                properties.getProperty(
+                    "sMin",
+                    Double.toString(TSFileDescriptor.getInstance().getConfig().getSmin()))));
+    TSFileDescriptor.getInstance()
+        .getConfig()
         .setPageSizeInByte(
             Integer.parseInt(
                 properties.getProperty(

@@ -24,8 +24,6 @@ import org.apache.iotdb.db.qp.constant.SQLConstant;
 import org.apache.iotdb.db.query.aggregation.impl.ValidityAggrResult;
 import org.apache.iotdb.db.query.factory.AggregateResultFactory;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
-import org.apache.iotdb.tsfile.file.metadata.statistics.DoubleStatistics;
-import org.apache.iotdb.tsfile.file.metadata.statistics.Statistics;
 import org.apache.iotdb.tsfile.read.common.BatchData;
 import org.apache.iotdb.tsfile.read.common.BatchDataFactory;
 import org.apache.iotdb.tsfile.read.common.IBatchDataIterator;
@@ -34,31 +32,27 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertFalse;
-
 /** Unit tests of desc aggregate result. */
 public class DescAggregateResultTest {
 
   @Test
   public void validityMergeTest() throws QueryProcessException, IOException {
     AggregateResult ValidityAggrResult =
-        AggregateResultFactory.getAggrResultByName(SQLConstant.VALIDITY, TSDataType.DOUBLE, false);
+        AggregateResultFactory.getAggrResultByName(SQLConstant.VALIDITY, TSDataType.DOUBLE, true);
 
-    Statistics<Double> doubleStats = new DoubleStatistics();
-    Statistics<Double> doubleStatsMerge = new DoubleStatistics();
-
-    for (int i = 1; i < 1000; i++) {
-      doubleStatsMerge.update(i, 23.90d);
-      assertFalse(doubleStatsMerge.isEmpty());
-    }
     System.out.println(Runtime.getRuntime().freeMemory() / 1024 / 1024);
-    doubleStatsMerge.updateDP();
-    doubleStatsMerge.updateReverseDP();
-    ValidityAggrResult.updateResultFromStatistics(doubleStatsMerge);
 
-    BatchData batchData = BatchDataFactory.createBatchData(TSDataType.DOUBLE, false, false);
-    for (int i = 0; i < 1024; i++) {
-      batchData.putDouble(i + 1024, 1.0d);
+    BatchData batchData = BatchDataFactory.createBatchData(TSDataType.DOUBLE, true, true);
+    for (int i = 0; i < 3024; i++) {
+      batchData.putDouble(1623311071000L - 3000 + i, 0d);
+    }
+    batchData.putDouble(1623311071000L, 0d);
+    batchData.putDouble(1623312051000L, 2d);
+    batchData.putDouble(1623312053000L, 2d);
+    batchData.putDouble(1623312055000L, 2d);
+    batchData.putDouble(1623312057000L, 2d);
+    for (int i = 0; i < 7024; i++) {
+      batchData.putDouble(1623312057000L + i, 0d);
     }
     batchData.resetBatchData();
     IBatchDataIterator it = batchData.getBatchDataIterator();

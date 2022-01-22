@@ -62,5 +62,7 @@ public class TSFileConfigUtil {
     globalConfig.setValueEncoder(config.getValueEncoder());
     globalConfig.setXMin(config.getXMin());
     globalConfig.setXMax(config.getXMax());
+    globalConfig.setsMax(config.getsMax());
+    globalConfig.setSmin(config.getSmin());
   }
 }

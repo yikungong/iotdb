@@ -237,7 +237,7 @@ public class AggregationExecutor {
       QueryContext context,
       Filter timeFilter,
       TSDataType tsDataType,
-      ValidityAllAggrResult validityAggrResult,
+      ValidityAllAggrResult validityAllAggrResult,
       TsFileFilter fileFilter)
       throws QueryProcessException, StorageEngineException, IOException {
     // construct series reader without value filter
@@ -264,11 +264,12 @@ public class AggregationExecutor {
       while (seriesReader.hasNextChunk()) {
         while (seriesReader.hasNextPage()) {
           IBatchDataIterator batchDataIterator = seriesReader.nextPage().getBatchDataIterator();
-          validityAggrResult.updateResultFromPageData(batchDataIterator);
+          validityAllAggrResult.updateResultFromPageData(batchDataIterator);
           batchDataIterator.reset();
         }
       }
     }
+    validityAllAggrResult.updateDPAndReverseDP();
   }
 
   private void aggregateValidity(
@@ -303,31 +304,31 @@ public class AggregationExecutor {
     boolean mergeable = true;
     while (seriesReader.hasNextFile()) {
       // cal by file statistics
-      if (seriesReader.canUseCurrentFileStatistics() && mergeable) {
-        Statistics fileStatistics = seriesReader.currentFileStatistics();
-        if (validityAggrResult.checkMergeable(fileStatistics)) {
-          validityAggrResult.updateResultFromStatistics(fileStatistics);
-          seriesReader.skipCurrentFile();
-          System.out.println("file Merge");
-          continue;
-        } else {
-          mergeable = false;
-        }
-      }
+      //      if (seriesReader.canUseCurrentFileStatistics() && mergeable) {
+      //        Statistics fileStatistics = seriesReader.currentFileStatistics();
+      //        if (validityAggrResult.checkMergeable(fileStatistics)) {
+      //          validityAggrResult.updateResultFromStatistics(fileStatistics);
+      //          seriesReader.skipCurrentFile();
+      //          System.out.println("file Merge");
+      //          continue;
+      //        } else {
+      //          mergeable = false;
+      //        }
+      //      }
 
       while (seriesReader.hasNextChunk()) {
         // cal by chunk statistics
-        if (seriesReader.canUseCurrentChunkStatistics() && mergeable) {
-          Statistics chunkStatistics = seriesReader.currentChunkStatistics();
-          if (validityAggrResult.checkMergeable(chunkStatistics)) {
-            validityAggrResult.updateResultFromStatistics(chunkStatistics);
-            seriesReader.skipCurrentChunk();
-            System.out.println("chunk Merge");
-            continue;
-          } else {
-            mergeable = false;
-          }
-        }
+        //        if (seriesReader.canUseCurrentChunkStatistics() && mergeable) {
+        //          Statistics chunkStatistics = seriesReader.currentChunkStatistics();
+        //          if (validityAggrResult.checkMergeable(chunkStatistics)) {
+        //            validityAggrResult.updateResultFromStatistics(chunkStatistics);
+        //            seriesReader.skipCurrentChunk();
+        //            System.out.println("chunk Merge");
+        //            continue;
+        //          } else {
+        //            mergeable = false;
+        //          }
+        //        }
         while (seriesReader.hasNextPage()) {
           // cal by page statistics
           if (seriesReader.canUseCurrentPageStatistics() && mergeable) {
@@ -337,8 +338,6 @@ public class AggregationExecutor {
               seriesReader.skipCurrentPage();
               System.out.println("page Merge");
               continue;
-            } else {
-              mergeable = false;
             }
           }
           IBatchDataIterator batchDataIterator = seriesReader.nextPage().getBatchDataIterator();
