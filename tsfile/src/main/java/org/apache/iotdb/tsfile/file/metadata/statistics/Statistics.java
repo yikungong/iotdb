@@ -67,7 +67,7 @@ public abstract class Statistics<T extends Serializable> {
   private int validityErrorsLastMerge = 0;
   private double speedAVG = 0;
   private double speedSTD = 0;
-  private int windowSize = 2048;
+  private int windowSize = tsFileConfig.getMaxNumberOfPointsInPage() * 2;
   private List<Boolean> lastRepair = new ArrayList<>();
   private List<Boolean> firstRepair = new ArrayList<>();
   private boolean repairSelfLast = true;
@@ -338,6 +338,11 @@ public abstract class Statistics<T extends Serializable> {
 
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
+    if (Math.abs(smax) > Math.abs(smin)) {
+      smin = -(this.speedAVG + 3 * this.speedSTD);
+    } else {
+      smax = -(this.speedAVG - 3 * this.speedSTD);
+    }
     //    double smax = 1;
     //    double smin = -1;
     firstRepair.add(false);
@@ -412,6 +417,11 @@ public abstract class Statistics<T extends Serializable> {
 
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
+    if (Math.abs(smax) > Math.abs(smin)) {
+      smin = -(this.speedAVG + 3 * this.speedSTD);
+    } else {
+      smax = -(this.speedAVG - 3 * this.speedSTD);
+    }
     //    double smax = 1;
     //    double smin = -1;
 
@@ -496,6 +506,11 @@ public abstract class Statistics<T extends Serializable> {
 
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
+    if (Math.abs(smax) > Math.abs(smin)) {
+      smin = -(this.speedAVG + 3 * this.speedSTD);
+    } else {
+      smax = -(this.speedAVG - 3 * this.speedSTD);
+    }
     //    double smax = 1;
     //    double smin = -1;
 
@@ -567,10 +582,7 @@ public abstract class Statistics<T extends Serializable> {
       }
       reverseDP.add(dp);
     }
-    int validityErrorsTemp = Length;
-    if (Length > windowSize) {
-      Length = windowSize;
-    }
+    int validityErrorsTemp = this.count;
     for (int m = 0; m < Length; m++) {
       if (validityErrorsTemp > DP.get(m) + reverseDP.get(Length - 1 - m)) {
         validityErrorsTemp = DP.get(m) + reverseDP.get(Length - 1 - m);
@@ -598,6 +610,11 @@ public abstract class Statistics<T extends Serializable> {
 
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
+    if (Math.abs(smax) > Math.abs(smin)) {
+      smin = -(this.speedAVG + 3 * this.speedSTD);
+    } else {
+      smax = -(this.speedAVG - 3 * this.speedSTD);
+    }
     //    double smax = 1;
     //    double smin = -1;
 
@@ -677,7 +694,7 @@ public abstract class Statistics<T extends Serializable> {
         break;
       }
     }
-    int validityErrorsTemp = Length;
+    int validityErrorsTemp = this.count;
     if (Length > windowSize) {
       Length = windowSize;
     }

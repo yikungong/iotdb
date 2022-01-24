@@ -94,16 +94,16 @@
         <module>example</module>
         <!--         <module>grafana-plugin</module> -->
         <!--         <module>grafana-connector</module> -->
-        <module>spark-tsfile</module>
-        <module>hadoop</module>
-        <module>spark-iotdb-connector</module>
-        <module>flink-tsfile-connector</module>
-        <module>flink-iotdb-connector</module>
+        <!--        <module>spark-tsfile</module>-->
+        <!--        <module>hadoop</module>-->
+        <!--        <module>spark-iotdb-connector</module>-->
+        <!--        <module>flink-tsfile-connector</module>-->
+        <!--        <module>flink-iotdb-connector</module>-->
         <module>distribution</module>
-        <module>hive-connector</module>
+        <!--        <module>hive-connector</module>-->
         <module>cluster</module>
         <module>cross-tests</module>
-        <module>zeppelin-interpreter</module>
+        <!--        <module>zeppelin-interpreter</module>-->
         <module>client-py</module>
         <module>compile-tools</module>
         <module>client-cpp</module>
