@@ -308,6 +308,9 @@ public abstract class Statistics<T extends Serializable> {
     if (index > windowSize) {
       timeWindow.remove(0);
       valueWindow.remove(0);
+      if (DP.size() != 0) {
+        DP.remove(0);
+      }
     }
   }
 
@@ -425,9 +428,12 @@ public abstract class Statistics<T extends Serializable> {
     //    double smax = 1;
     //    double smin = -1;
 
-    firstRepair.add(false);
-    DP.add(0);
-    for (int index = 1; index < timeWindow.size(); index++) {
+    if (DP.size() == 0) {
+      firstRepair.add(false);
+      DP.add(0);
+    }
+
+    for (int index = DP.size(); index < timeWindow.size(); index++) {
       Long time = timeWindow.get(index);
       Double value = valueWindow.get(index);
       int dp = -1;
@@ -443,7 +449,7 @@ public abstract class Statistics<T extends Serializable> {
         }
         continue;
       }
-      for (int i = 0; i < index; i++) {
+      for (int i = DP.size() - 1; i < index; i++) {
         if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax) {
           continue;
         }
@@ -618,6 +624,10 @@ public abstract class Statistics<T extends Serializable> {
     //    double smax = 1;
     //    double smin = -1;
 
+    if (reverseDP.size() != 0) {
+      reverseDP.clear();
+      lastRepair.clear();
+    }
     lastRepair.add(false);
     reverseDP.add(0);
 
@@ -667,14 +677,14 @@ public abstract class Statistics<T extends Serializable> {
             if (reverseDP.get(index) + i - j - 1 < dp) {
               dp = reverseDP.get(index) + i - j - 1;
               if (lastRepair.get(index)) {
-                if (lastRepair.size() == Length) {
-                  lastRepair.set(Length - 1, true);
+                if (lastRepair.size() == Length - j) {
+                  lastRepair.set(Length - j - 1, true);
                 } else {
                   lastRepair.add(true);
                 }
               } else {
-                if (lastRepair.size() == Length) {
-                  lastRepair.set(Length - 1, false);
+                if (lastRepair.size() == Length - j) {
+                  lastRepair.set(Length - j - 1, false);
                 } else {
                   lastRepair.add(false);
                 }
