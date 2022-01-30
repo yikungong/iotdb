@@ -310,6 +310,7 @@ public abstract class Statistics<T extends Serializable> {
       valueWindow.remove(0);
       if (DP.size() != 0) {
         DP.remove(0);
+        firstRepair.remove(0);
       }
     }
   }
@@ -374,13 +375,13 @@ public abstract class Statistics<T extends Serializable> {
           if (dp == -1) {
             dp = DP.get(i) + index - i - 1;
             if (firstRepair.get(i)) {
-              if (firstRepair.size() == index + 1) {
+              if (firstRepair.size() >= index + 1) {
                 firstRepair.set(index, true);
               } else {
                 firstRepair.add(true);
               }
             } else {
-              if (firstRepair.size() == index + 1) {
+              if (firstRepair.size() >= index + 1) {
                 firstRepair.set(index, false);
               } else {
                 firstRepair.add(false);
@@ -390,13 +391,13 @@ public abstract class Statistics<T extends Serializable> {
             if (DP.get(i) + index - i - 1 < dp) {
               dp = DP.get(i) + index - i - 1;
               if (firstRepair.get(i)) {
-                if (firstRepair.size() == index + 1) {
+                if (firstRepair.size() >= index + 1) {
                   firstRepair.set(index, true);
                 } else {
                   firstRepair.add(true);
                 }
               } else {
-                if (firstRepair.size() == index + 1) {
+                if (firstRepair.size() >= index + 1) {
                   firstRepair.set(index, false);
                 } else {
                   firstRepair.add(false);
@@ -449,7 +450,7 @@ public abstract class Statistics<T extends Serializable> {
         }
         continue;
       }
-      for (int i = DP.size() - 1; i < index; i++) {
+      for (int i = 0; i < index; i++) {
         if (valueWindow.get(i) < xMin || valueWindow.get(i) > xMax) {
           continue;
         }
@@ -462,13 +463,13 @@ public abstract class Statistics<T extends Serializable> {
           if (dp == -1) {
             dp = DP.get(i) + index - i - 1;
             if (firstRepair.get(i)) {
-              if (firstRepair.size() == index + 1) {
+              if (firstRepair.size() >= index + 1) {
                 firstRepair.set(index, true);
               } else {
                 firstRepair.add(true);
               }
             } else {
-              if (firstRepair.size() == index + 1) {
+              if (firstRepair.size() >= index + 1) {
                 firstRepair.set(index, false);
               } else {
                 firstRepair.add(false);
@@ -478,13 +479,13 @@ public abstract class Statistics<T extends Serializable> {
             if (DP.get(i) + index - i - 1 < dp) {
               dp = DP.get(i) + index - i - 1;
               if (firstRepair.get(i)) {
-                if (firstRepair.size() == index + 1) {
+                if (firstRepair.size() >= index + 1) {
                   firstRepair.set(index, true);
                 } else {
                   firstRepair.add(true);
                 }
               } else {
-                if (firstRepair.size() == index + 1) {
+                if (firstRepair.size() >= index + 1) {
                   firstRepair.set(index, false);
                 } else {
                   firstRepair.add(false);
@@ -550,13 +551,13 @@ public abstract class Statistics<T extends Serializable> {
           if (dp == -1) {
             dp = reverseDP.get(index) + i - j - 1;
             if (lastRepair.get(index)) {
-              if (lastRepair.size() == Length - j) {
+              if (lastRepair.size() >= Length - j) {
                 lastRepair.set(Length - j - 1, true);
               } else {
                 lastRepair.add(true);
               }
             } else {
-              if (lastRepair.size() == Length - j) {
+              if (lastRepair.size() >= Length - j) {
                 lastRepair.set(Length - j - 1, false);
               } else {
                 lastRepair.add(false);
@@ -566,14 +567,14 @@ public abstract class Statistics<T extends Serializable> {
             if (reverseDP.get(index) + i - j - 1 < dp) {
               dp = reverseDP.get(index) + i - j - 1;
               if (lastRepair.get(index)) {
-                if (lastRepair.size() == Length) {
-                  lastRepair.set(Length - 1, true);
+                if (lastRepair.size() >= Length - j) {
+                  lastRepair.set(Length - j - 1, true);
                 } else {
                   lastRepair.add(true);
                 }
               } else {
-                if (lastRepair.size() == Length) {
-                  lastRepair.set(Length - 1, false);
+                if (lastRepair.size() >= Length) {
+                  lastRepair.set(Length - j - 1, false);
                 } else {
                   lastRepair.add(false);
                 }
@@ -661,13 +662,13 @@ public abstract class Statistics<T extends Serializable> {
           if (dp == -1) {
             dp = reverseDP.get(index) + i - j - 1;
             if (lastRepair.get(index)) {
-              if (lastRepair.size() == Length - j) {
+              if (lastRepair.size() >= Length - j) {
                 lastRepair.set(Length - j - 1, true);
               } else {
                 lastRepair.add(true);
               }
             } else {
-              if (lastRepair.size() == Length - j) {
+              if (lastRepair.size() >= Length - j) {
                 lastRepair.set(Length - j - 1, false);
               } else {
                 lastRepair.add(false);
@@ -677,13 +678,13 @@ public abstract class Statistics<T extends Serializable> {
             if (reverseDP.get(index) + i - j - 1 < dp) {
               dp = reverseDP.get(index) + i - j - 1;
               if (lastRepair.get(index)) {
-                if (lastRepair.size() == Length - j) {
+                if (lastRepair.size() >= Length - j) {
                   lastRepair.set(Length - j - 1, true);
                 } else {
                   lastRepair.add(true);
                 }
               } else {
-                if (lastRepair.size() == Length - j) {
+                if (lastRepair.size() >= Length - j) {
                   lastRepair.set(Length - j - 1, false);
                 } else {
                   lastRepair.add(false);
@@ -694,7 +695,7 @@ public abstract class Statistics<T extends Serializable> {
         }
       }
       if (!find) {
-        dp = Length - 1;
+        dp = Length - j - 1;
         lastRepair.add(true);
       }
       reverseDP.add(dp);
@@ -708,9 +709,10 @@ public abstract class Statistics<T extends Serializable> {
     if (Length > windowSize) {
       Length = windowSize;
     }
-    for (int m = 0; m < Length; m++) {
-      if (validityErrorsTemp > DP.get(m) + reverseDP.get(Length - 1 - m)) {
-        validityErrorsTemp = DP.get(m) + reverseDP.get(Length - 1 - m);
+    int DPLength = DP.size();
+    for (int m = 0; m < reverseDP.size(); m++) {
+      if (validityErrorsTemp > DP.get(DPLength - 1 - m) + reverseDP.get(m)) {
+        validityErrorsTemp = DP.get(DPLength - 1 - m) + reverseDP.get(m);
         indexLastRepaired = m;
       }
     }

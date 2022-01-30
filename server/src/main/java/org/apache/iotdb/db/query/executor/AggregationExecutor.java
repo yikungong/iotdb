@@ -50,6 +50,8 @@ import org.apache.iotdb.db.query.reader.series.SeriesReaderByTimestamp;
 import org.apache.iotdb.db.query.timegenerator.ServerTimeGenerator;
 import org.apache.iotdb.db.utils.QueryUtils;
 import org.apache.iotdb.db.utils.ValueIterator;
+import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
+import org.apache.iotdb.tsfile.common.conf.TSFileDescriptor;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.statistics.Statistics;
 import org.apache.iotdb.tsfile.read.common.BatchData;
@@ -81,6 +83,7 @@ public class AggregationExecutor {
   protected List<String> aggregations;
   protected IExpression expression;
   protected boolean ascending;
+  private final TSFileConfig tsFileConfig = TSFileDescriptor.getInstance().getConfig();
   protected QueryContext context;
   protected AggregateResult[] aggregateResultList;
 
@@ -249,6 +252,9 @@ public class AggregationExecutor {
     // update filter by TTL
     timeFilter = queryDataSource.updateFilterUsingTTL(timeFilter);
 
+    double muss = tsFileConfig.getMussRate() * 10;
+    int circle = 0;
+
     IAggregateReader seriesReader =
         new SeriesAggregateReader(
             seriesPath,
@@ -263,11 +269,25 @@ public class AggregationExecutor {
     while (seriesReader.hasNextFile()) {
       while (seriesReader.hasNextChunk()) {
         while (seriesReader.hasNextPage()) {
+          circle++;
           if (seriesReader.canUseCurrentPageStatistics()) {
             Statistics pageStatistic = seriesReader.currentPageStatistics();
             if (validityAllAggrResult.checkMergeable(pageStatistic)) {
-              System.out.println("not Merge");
+              if (circle > muss) {
+                validityAllAggrResult.updateResultFromStatistics(pageStatistic);
+                seriesReader.skipCurrentPage();
+                System.out.println("page Merge");
+                if (circle >= 10) {
+                  circle = 0;
+                }
+                continue;
+              } else {
+                System.out.println("not Merge");
+              }
             }
+          }
+          if (circle >= 10) {
+            circle = 0;
           }
           IBatchDataIterator batchDataIterator = seriesReader.nextPage().getBatchDataIterator();
           validityAllAggrResult.updateResultFromPageData(batchDataIterator);
@@ -275,9 +295,17 @@ public class AggregationExecutor {
         }
       }
     }
+    double smax =
+        validityAllAggrResult.getStatisticsInstance().getSpeedAVG()
+            + 3 * validityAllAggrResult.getStatisticsInstance().getSpeedSTD();
+    double smin =
+        validityAllAggrResult.getStatisticsInstance().getSpeedAVG()
+            - 3 * validityAllAggrResult.getStatisticsInstance().getSpeedSTD();
+    System.out.println("smax:" + smax + "smin:" + smin);
     validityAllAggrResult.updateDPAndReverseDP();
   }
 
+  // validity
   private void aggregateValidity(
       PartialPath seriesPath,
       Set<String> measurements,
@@ -344,6 +372,8 @@ public class AggregationExecutor {
               System.out.println("page Merge");
               continue;
             }
+          } else {
+            System.out.println("unSeq");
           }
           IBatchDataIterator batchDataIterator = seriesReader.nextPage().getBatchDataIterator();
           validityAggrResult.updateResultFromPageData(batchDataIterator);
@@ -352,6 +382,14 @@ public class AggregationExecutor {
         }
       }
     }
+    double smax =
+        validityAggrResult.getStatisticsInstance().getSpeedAVG()
+            + 3 * validityAggrResult.getStatisticsInstance().getSpeedSTD();
+    double smin =
+        validityAggrResult.getStatisticsInstance().getSpeedAVG()
+            - 3 * validityAggrResult.getStatisticsInstance().getSpeedSTD();
+    System.out.println("smax:" + smax + "smin:" + smin);
+    validityAggrResult.updateDPAndReverseDP();
   }
 
   protected void aggregateOneAlignedSeries(

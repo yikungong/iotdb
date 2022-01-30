@@ -1004,6 +1004,13 @@ public class IoTDBDescriptor {
                     Double.toString(TSFileDescriptor.getInstance().getConfig().getSmin()))));
     TSFileDescriptor.getInstance()
         .getConfig()
+        .setMussRate(
+            Double.parseDouble(
+                properties.getProperty(
+                    "mussRate",
+                    Double.toString(TSFileDescriptor.getInstance().getConfig().getMussRate()))));
+    TSFileDescriptor.getInstance()
+        .getConfig()
         .setPageSizeInByte(
             Integer.parseInt(
                 properties.getProperty(

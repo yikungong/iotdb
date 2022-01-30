@@ -64,5 +64,6 @@ public class TSFileConfigUtil {
     globalConfig.setXMax(config.getXMax());
     globalConfig.setsMax(config.getsMax());
     globalConfig.setSmin(config.getSmin());
+    globalConfig.setMussRate(config.getMussRate());
   }
 }

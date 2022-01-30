@@ -121,6 +121,9 @@ public class TSFileDescriptor {
           Double.parseDouble(properties.getProperty("sMax", Double.toString(conf.getsMax()))));
       conf.setSmin(
           Double.parseDouble(properties.getProperty("sMin", Double.toString(conf.getSmin()))));
+      conf.setMussRate(
+          Double.parseDouble(
+              properties.getProperty("mussRate", Double.toString(conf.getMussRate()))));
       if (conf.getPageSizeInByte() > conf.getGroupSizeInByte()) {
         logger.warn(
             "page_size is greater than group size, will set it as the same with group size");

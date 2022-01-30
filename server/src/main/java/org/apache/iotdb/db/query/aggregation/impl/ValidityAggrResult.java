@@ -61,6 +61,9 @@ public class ValidityAggrResult extends AggregateResult {
   }
 
   public void updateDPAndReverseDP() {
+    if (statisticsInstance.getTimeWindow().size() == 0) {
+      return;
+    }
     statisticsInstance.updateDP();
     statisticsInstance.updateReverseDP();
   }

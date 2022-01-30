@@ -154,6 +154,8 @@ public class TSFileConfig implements Serializable {
 
   private double smin = -Double.MAX_VALUE + 1;
 
+  private double mussRate = 1;
+
   public TSFileConfig() {}
 
   public int getGroupSizeInByte() {
@@ -450,5 +452,13 @@ public class TSFileConfig implements Serializable {
 
   public void setSmin(double smin) {
     this.smin = smin;
+  }
+
+  public double getMussRate() {
+    return mussRate;
+  }
+
+  public void setMussRate(double mussRate) {
+    this.mussRate = mussRate;
   }
 }
