@@ -18,6 +18,7 @@
  */
 package org.apache.iotdb.tsfile.file.metadata.statistics;
 
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -102,25 +103,31 @@ public class DoubleStatisticsTest {
     Statistics<Double> doubleStats = new DoubleStatistics();
     Statistics<Double> doubleStatsMerge = new DoubleStatistics();
 
+    DescriptiveStatistics stats = new DescriptiveStatistics();
+
     System.out.println(Runtime.getRuntime().totalMemory() / 1024 / 1024);
     for (int i = 1; i < 3000; i++) {
-      doubleStats.update(1623311071000L - 3000 + i, 2.32d);
+      doubleStats.update(1623311071000L - 3000 * 1000 + i * 1000, 2.32d);
+      stats.addValue(0d / 1000);
     }
     doubleStats.updateDP();
     doubleStats.updateReverseDP();
     doubleStats.update(1623311071000L, 2.32d);
+    stats.addValue(0d / 1000);
     doubleStats.update(1623311072000L, 12.32d);
+    stats.addValue(10d / 1000);
     doubleStats.update(1623311073000L, 2.32d);
+    stats.addValue(-10d / 1000);
     doubleStats.update(1623311074000L, 2.32d);
+    stats.addValue(0d / 1000);
     doubleStats.update(1623311075000L, 2.32d);
 
     System.out.println(Runtime.getRuntime().freeMemory() / 1024 / 1024);
-
+    System.out.println(stats.getMean() + 3 * stats.getStandardDeviation());
+    System.out.println(stats.getMean() - 3 * stats.getStandardDeviation());
     double smax = doubleStats.getSpeedAVG() + 3 * doubleStats.getSpeedSTD();
     double smin = doubleStats.getSpeedAVG() - 3 * doubleStats.getSpeedSTD();
 
-    doubleStats.updateDP();
-    doubleStats.updateReverseDP();
     doubleStats.updateDP();
     doubleStats.updateReverseDP();
     assertEquals(1.0, doubleStats.getValidity(), maxError);

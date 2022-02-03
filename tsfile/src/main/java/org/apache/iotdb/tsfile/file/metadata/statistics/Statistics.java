@@ -305,14 +305,14 @@ public abstract class Statistics<T extends Serializable> {
       double speedNow = (valueWindow.get(index) - valueWindow.get(index - 1)) / timeLastInterval;
       updateAVGSTD(speedNow);
     }
-    if (index > windowSize) {
-      timeWindow.remove(0);
-      valueWindow.remove(0);
-      if (DP.size() != 0) {
-        DP.remove(0);
-        firstRepair.remove(0);
-      }
-    }
+    //    if (index > windowSize) {
+    //      timeWindow.remove(0);
+    //      valueWindow.remove(0);
+    //      if (DP.size() != 0) {
+    //        DP.remove(0);
+    //        firstRepair.remove(0);
+    //      }
+    //    }
   }
 
   // 更新ValidityAll
@@ -500,10 +500,10 @@ public abstract class Statistics<T extends Serializable> {
         firstRepair.add(true);
       }
       DP.add(dp);
-      if (DP.size() > windowSize) {
-        int a = DP.remove(0);
-        boolean b = firstRepair.remove(0);
-      }
+      //      if (DP.size() > windowSize) {
+      //        int a = DP.remove(0);
+      //        boolean b = firstRepair.remove(0);
+      //      }
     }
   }
 
@@ -699,16 +699,16 @@ public abstract class Statistics<T extends Serializable> {
         lastRepair.add(true);
       }
       reverseDP.add(dp);
-      if (reverseDP.size() > windowSize) {
-        int a = reverseDP.remove(reverseDP.size() - 1);
-        boolean b = lastRepair.remove(lastRepair.size() - 1);
-        break;
-      }
+      //      if (reverseDP.size() > windowSize) {
+      //        int a = reverseDP.remove(reverseDP.size() - 1);
+      //        boolean b = lastRepair.remove(lastRepair.size() - 1);
+      //        break;
+      //      }
     }
     int validityErrorsTemp = this.count;
-    if (Length > windowSize) {
-      Length = windowSize;
-    }
+    //    if (Length > windowSize) {
+    //      Length = windowSize;
+    //    }
     int DPLength = DP.size();
     for (int m = 0; m < reverseDP.size(); m++) {
       if (validityErrorsTemp > DP.get(DPLength - 1 - m) + reverseDP.get(m)) {
@@ -731,10 +731,12 @@ public abstract class Statistics<T extends Serializable> {
   }
 
   public void updateAVGSTD(double speedNow) {
-    speedSTD =
-        (count - 1) / Math.pow(count, 2) * Math.pow(speedNow - speedAVG, 2)
-            + (double) (count - 1) / count * speedSTD;
-    speedAVG = speedAVG + (speedNow - speedAVG) / count;
+    double variance = Math.pow(this.speedSTD, 2);
+    this.speedSTD =
+        Math.sqrt(
+            (count - 1) / Math.pow(count, 2) * Math.pow(speedNow - this.speedAVG, 2)
+                + (double) (count - 1) / count * variance);
+    this.speedAVG = this.speedAVG + (speedNow - this.speedAVG) / count;
   }
 
   public void update(long time, Binary value) {

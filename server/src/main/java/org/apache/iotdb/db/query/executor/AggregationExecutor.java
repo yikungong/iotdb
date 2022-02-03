@@ -302,6 +302,8 @@ public class AggregationExecutor {
         validityAllAggrResult.getStatisticsInstance().getSpeedAVG()
             - 3 * validityAllAggrResult.getStatisticsInstance().getSpeedSTD();
     System.out.println("smax:" + smax + "smin:" + smin);
+    System.out.println(validityAllAggrResult.getStatisticsInstance().getSpeedAVG());
+    System.out.println(validityAllAggrResult.getStatisticsInstance().getSpeedSTD());
     validityAllAggrResult.updateDPAndReverseDP();
   }
 
@@ -366,6 +368,7 @@ public class AggregationExecutor {
           // cal by page statistics
           if (seriesReader.canUseCurrentPageStatistics()) {
             Statistics pageStatistic = seriesReader.currentPageStatistics();
+            validityAggrResult.updateDPAndReverseDP();
             if (validityAggrResult.checkMergeable(pageStatistic)) {
               validityAggrResult.updateResultFromStatistics(pageStatistic);
               seriesReader.skipCurrentPage();
@@ -377,7 +380,6 @@ public class AggregationExecutor {
           }
           IBatchDataIterator batchDataIterator = seriesReader.nextPage().getBatchDataIterator();
           validityAggrResult.updateResultFromPageData(batchDataIterator);
-          validityAggrResult.updateDPAndReverseDP();
           batchDataIterator.reset();
         }
       }
@@ -389,6 +391,8 @@ public class AggregationExecutor {
         validityAggrResult.getStatisticsInstance().getSpeedAVG()
             - 3 * validityAggrResult.getStatisticsInstance().getSpeedSTD();
     System.out.println("smax:" + smax + "smin:" + smin);
+    System.out.println(validityAggrResult.getStatisticsInstance().getSpeedAVG());
+    System.out.println(validityAggrResult.getStatisticsInstance().getSpeedSTD());
     validityAggrResult.updateDPAndReverseDP();
   }
 
