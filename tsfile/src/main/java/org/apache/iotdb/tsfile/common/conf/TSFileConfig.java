@@ -156,6 +156,8 @@ public class TSFileConfig implements Serializable {
 
   private double mussRate = 1;
 
+  private boolean usePreSpeed = false;
+
   public TSFileConfig() {}
 
   public int getGroupSizeInByte() {
@@ -460,5 +462,13 @@ public class TSFileConfig implements Serializable {
 
   public void setMussRate(double mussRate) {
     this.mussRate = mussRate;
+  }
+
+  public boolean isUsePreSpeed() {
+    return usePreSpeed;
+  }
+
+  public void setUsePreSpeed(boolean usePreSpeed) {
+    this.usePreSpeed = usePreSpeed;
   }
 }

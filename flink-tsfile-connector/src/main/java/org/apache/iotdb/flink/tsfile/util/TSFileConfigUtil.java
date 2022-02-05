@@ -65,5 +65,6 @@ public class TSFileConfigUtil {
     globalConfig.setsMax(config.getsMax());
     globalConfig.setSmin(config.getSmin());
     globalConfig.setMussRate(config.getMussRate());
+    globalConfig.setUsePreSpeed(config.isUsePreSpeed());
   }
 }

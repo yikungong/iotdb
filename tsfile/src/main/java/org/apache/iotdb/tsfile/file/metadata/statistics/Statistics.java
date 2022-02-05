@@ -67,6 +67,7 @@ public abstract class Statistics<T extends Serializable> {
   private int validityErrorsLastMerge = 0;
   private double speedAVG = 0;
   private double speedSTD = 0;
+  private boolean usePreSpeed = tsFileConfig.isUsePreSpeed();
   private int windowSize = tsFileConfig.getMaxNumberOfPointsInPage() * 2;
   private List<Boolean> lastRepair = new ArrayList<>();
   private List<Boolean> firstRepair = new ArrayList<>();
@@ -347,6 +348,10 @@ public abstract class Statistics<T extends Serializable> {
     } else {
       smax = -(this.speedAVG - 3 * this.speedSTD);
     }
+    if (usePreSpeed) {
+      smin = tsFileConfig.getSmin();
+      smax = tsFileConfig.getsMax();
+    }
     //    double smax = 1;
     //    double smin = -1;
     firstRepair.add(false);
@@ -425,6 +430,10 @@ public abstract class Statistics<T extends Serializable> {
       smin = -(this.speedAVG + 3 * this.speedSTD);
     } else {
       smax = -(this.speedAVG - 3 * this.speedSTD);
+    }
+    if (usePreSpeed) {
+      smin = tsFileConfig.getSmin();
+      smax = tsFileConfig.getsMax();
     }
     //    double smax = 1;
     //    double smin = -1;
@@ -517,6 +526,10 @@ public abstract class Statistics<T extends Serializable> {
       smin = -(this.speedAVG + 3 * this.speedSTD);
     } else {
       smax = -(this.speedAVG - 3 * this.speedSTD);
+    }
+    if (usePreSpeed) {
+      smin = tsFileConfig.getSmin();
+      smax = tsFileConfig.getsMax();
     }
     //    double smax = 1;
     //    double smin = -1;
@@ -621,6 +634,10 @@ public abstract class Statistics<T extends Serializable> {
       smin = -(this.speedAVG + 3 * this.speedSTD);
     } else {
       smax = -(this.speedAVG - 3 * this.speedSTD);
+    }
+    if (usePreSpeed) {
+      smin = tsFileConfig.getSmin();
+      smax = tsFileConfig.getsMax();
     }
     //    double smax = 1;
     //    double smin = -1;

@@ -124,6 +124,9 @@ public class TSFileDescriptor {
       conf.setMussRate(
           Double.parseDouble(
               properties.getProperty("mussRate", Double.toString(conf.getMussRate()))));
+      conf.setUsePreSpeed(
+          Boolean.parseBoolean(
+              properties.getProperty("usePreSpeed", Boolean.toString(conf.isUsePreSpeed()))));
       if (conf.getPageSizeInByte() > conf.getGroupSizeInByte()) {
         logger.warn(
             "page_size is greater than group size, will set it as the same with group size");

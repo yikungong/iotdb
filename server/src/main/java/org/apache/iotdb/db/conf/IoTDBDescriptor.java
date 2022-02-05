@@ -1011,6 +1011,13 @@ public class IoTDBDescriptor {
                     Double.toString(TSFileDescriptor.getInstance().getConfig().getMussRate()))));
     TSFileDescriptor.getInstance()
         .getConfig()
+        .setUsePreSpeed(
+            Boolean.parseBoolean(
+                properties.getProperty(
+                    "usePreSpeed",
+                    Boolean.toString(TSFileDescriptor.getInstance().getConfig().isUsePreSpeed()))));
+    TSFileDescriptor.getInstance()
+        .getConfig()
         .setPageSizeInByte(
             Integer.parseInt(
                 properties.getProperty(
