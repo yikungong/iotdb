@@ -143,6 +143,7 @@ public class ValidityAggrResult extends AggregateResult {
     validity = 0.0;
     sum = 0.0;
     cnt = 0L;
+    statisticsInstance = new DoubleStatistics();
   }
 
   public double getValidity() {
@@ -159,6 +160,10 @@ public class ValidityAggrResult extends AggregateResult {
 
   public Statistics getStatisticsInstance() {
     return statisticsInstance;
+  }
+
+  public void setStatisticsInstance(Statistics statisticsInstance) {
+    this.statisticsInstance = statisticsInstance;
   }
 
   public boolean checkMergeable(Statistics statistics) {
