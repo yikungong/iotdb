@@ -494,7 +494,7 @@ public class AggregationExecutor {
     System.out.println("smax:" + smax + "smin:" + smin);
     System.out.println(validityAggrResult.getStatisticsInstance().getSpeedAVG());
     System.out.println(validityAggrResult.getStatisticsInstance().getSpeedSTD());
-    validityAggrResult.updateDPAndReverseDP();
+    //    validityAggrResult.updateDPAndReverseDP();
   }
 
   protected void aggregateOneAlignedSeries(
