@@ -337,14 +337,27 @@ public class AggregationExecutor {
             null,
             null,
             true);
-    int nowPageIndex = -1;
+
+    // unseq or seq
+    int nowPageIndex = 0;
     List<Statistics> statisticsList = new ArrayList<>();
+    List<Integer> indexUsed = new ArrayList<>();
+    List<Integer> unseqIndex = new ArrayList<>();
+    boolean unseqMerge = true;
     while (seriesReader.hasNextFile()) {
       while (seriesReader.hasNextChunk()) {
         while (seriesReader.hasNextPage()) {
+
+          // seq
           if (seriesReader.canUseCurrentPageStatistics()) {
+            unseqMerge = false;
+            if (unseqIndex.size() > 0) {
+              indexUsed.add(unseqIndex.get(0));
+              unseqIndex.clear();
+            }
+            indexUsed.add(nowPageIndex);
             Statistics pageStatistic = seriesReader.currentPageStatistics();
-            if (nowPageIndex == -1) {
+            if (nowPageIndex == 0) {
               validityAggrResult.setStatisticsInstance(pageStatistic);
               nowPageIndex++;
               seriesReader.skipCurrentPage();
@@ -358,17 +371,39 @@ public class AggregationExecutor {
             continue;
           } else {
             System.out.println("unSeq");
+            if (!unseqMerge) {
+              statisticsList.add(validityAggrResult.getStatisticsInstance());
+              indexUsed.add(nowPageIndex);
+            }
+            unseqMerge = true;
           }
           IBatchDataIterator batchDataIterator = seriesReader.nextPage().getBatchDataIterator();
           validityAggrResult.updateResultFromPageData(batchDataIterator);
+          unseqIndex.add(nowPageIndex);
+          nowPageIndex++;
           batchDataIterator.reset();
         }
       }
     }
     validityAggrResult.updateDPAndReverseDP();
+    if (unseqIndex.size() > 0) {
+      indexUsed.add(unseqIndex.get(0));
+      unseqIndex.clear();
+    }
     statisticsList.add(validityAggrResult.getStatisticsInstance());
+
+    // can merge or not merge
+    //    boolean[] indexBoolean = new boolean[nowPageIndex];
+    //    for ( int j = nowPageIndex-1 ; j > 0 ; j--){
+    //      indexBoolean[j] = indexUsed.contains(j);
+    //    }
+
     int i = 0;
     List<Statistics> finalStatisticsList = new ArrayList<>();
+    boolean[] canMerge = new boolean[statisticsList.size()];
+    for (int k = 0; k < statisticsList.size(); k++) {
+      canMerge[k] = true;
+    }
     validityAggrResult.reset();
     while (i < statisticsList.size()) {
       // TODO: check merge code
@@ -380,53 +415,65 @@ public class AggregationExecutor {
         i++;
       } else {
         // TODO: update when can not merge
-        //              while (seriesReaderTemp.hasNextFile()) {
-        //                while (seriesReaderTemp.hasNextChunk()) {
-        //                  while (seriesReaderTemp.hasNextPage()) {
-        //                  }
-        //                }
-        //              }
-        IAggregateReader seriesReaderTemp =
-            new SeriesAggregateReader(
-                seriesPath,
-                measurements,
-                tsDataType,
-                context,
-                queryDataSource,
-                timeFilter,
-                null,
-                null,
-                true);
-        int pageIndex = 0;
-        while (seriesReaderTemp.hasNextFile()) {
-          while (seriesReaderTemp.hasNextChunk()) {
-            while (seriesReaderTemp.hasNextPage()) {
-              if (pageIndex < i) {
-                seriesReaderTemp.nextPage();
-                pageIndex++;
-                //                System.out.println(pageIndex);
-              } else if (pageIndex > i) {
-                break;
-              } else {
-                IBatchDataIterator batchDataIterator =
-                    seriesReaderTemp.nextPage().getBatchDataIterator();
-                validityAggrResult.updateResultFromPageData(batchDataIterator);
-                validityAggrResult.updateDPAndReverseDP();
-                finalStatisticsList.add(validityAggrResult.getStatisticsInstance());
-                batchDataIterator.reset();
-                //                System.out.println(i);
-                pageIndex++;
+        canMerge[i] = false;
+        for (int j = i - 1; j >= 0; j--) {
+          if (!canMerge[j] && j > 0) {
+            System.out.println("Merge failed before");
+            continue;
+          }
+          if (finalStatisticsList.size() > 0) {
+            finalStatisticsList.remove(finalStatisticsList.size() - 1);
+          }
+          int startIndex = indexUsed.get(j);
+          int endIndex = indexUsed.get(i);
+          System.out.println(startIndex);
+          IAggregateReader seriesReaderTemp =
+              new SeriesAggregateReader(
+                  seriesPath,
+                  measurements,
+                  tsDataType,
+                  context,
+                  queryDataSource,
+                  timeFilter,
+                  null,
+                  null,
+                  true);
+          int pageIndex = 0;
+          while (seriesReaderTemp.hasNextFile()) {
+            while (seriesReaderTemp.hasNextChunk()) {
+              while (seriesReaderTemp.hasNextPage()) {
+                if (pageIndex < startIndex) {
+                  seriesReaderTemp.nextPage();
+                  pageIndex++;
+                  //                System.out.println(pageIndex);
+                } else if (pageIndex > endIndex) {
+                  break;
+                } else {
+                  IBatchDataIterator batchDataIterator =
+                      seriesReaderTemp.nextPage().getBatchDataIterator();
+                  validityAggrResult.updateResultFromPageData(batchDataIterator);
+                  batchDataIterator.reset();
+                  //                System.out.println(i);
+                  pageIndex++;
+                  //                  break;
+                }
+              }
+              if (pageIndex > endIndex) {
                 break;
               }
             }
-            if (pageIndex >= i) {
+            if (pageIndex > endIndex) {
               break;
             }
           }
-          if (pageIndex >= i) {
+          validityAggrResult.updateDPAndReverseDP();
+          if (validityAggrResult.getStatisticsInstance().getRepairSelfFirst()) {
             break;
+          } else {
+            canMerge[j] = false;
           }
         }
+        finalStatisticsList.add(validityAggrResult.getStatisticsInstance());
         System.out.println("can not Merge");
         i++;
       }

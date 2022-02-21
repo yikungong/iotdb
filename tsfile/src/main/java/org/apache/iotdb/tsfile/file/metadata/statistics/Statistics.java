@@ -1099,6 +1099,14 @@ public abstract class Statistics<T extends Serializable> {
     return o != null && getClass() == o.getClass();
   }
 
+  public boolean getRepairSelfLast() {
+    return this.repairSelfLast;
+  }
+
+  public boolean getRepairSelfFirst() {
+    return this.repairSelfFirst;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(), count, startTime, endTime);
