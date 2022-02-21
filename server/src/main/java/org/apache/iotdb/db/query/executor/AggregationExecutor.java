@@ -421,6 +421,7 @@ public class AggregationExecutor {
         // TODO: update when can not merge
         canMerge[i] = false;
         for (int j = i - 1; j >= 0; j--) {
+          validityAggrResult.reset();
           if (!canMerge[j] && j > 0) {
             System.out.println("Merge failed before");
             continue;
@@ -469,7 +470,9 @@ public class AggregationExecutor {
             }
           }
           validityAggrResult.updateDPAndReverseDP();
-          if (validityAggrResult.getStatisticsInstance().getRepairSelfFirst()) {
+          if (finalStatisticsList
+              .get(finalStatisticsList.size() - 1)
+              .checkMergeable(validityAggrResult.getStatisticsInstance())) {
             System.out.println(
                 finalStatisticsList.get(finalStatisticsList.size() - 1).getEndTime());
             System.out.println(validityAggrResult.getStatisticsInstance().getStartTime());
