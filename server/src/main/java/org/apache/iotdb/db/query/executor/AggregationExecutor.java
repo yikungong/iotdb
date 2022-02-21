@@ -414,6 +414,10 @@ public class AggregationExecutor {
         System.out.println("merge");
         i++;
       } else {
+        System.out.println(finalStatisticsList.get(finalStatisticsList.size() - 1).getStartTime());
+        System.out.println(finalStatisticsList.get(finalStatisticsList.size() - 1).getEndTime());
+        System.out.println(pageStatistic.getStartTime());
+        System.out.println(pageStatistic.getEndTime());
         // TODO: update when can not merge
         canMerge[i] = false;
         for (int j = i - 1; j >= 0; j--) {
@@ -426,7 +430,6 @@ public class AggregationExecutor {
           }
           int startIndex = indexUsed.get(j);
           int endIndex = indexUsed.get(i);
-          System.out.println(startIndex);
           IAggregateReader seriesReaderTemp =
               new SeriesAggregateReader(
                   seriesPath,
@@ -445,7 +448,6 @@ public class AggregationExecutor {
                 if (pageIndex < startIndex) {
                   seriesReaderTemp.nextPage();
                   pageIndex++;
-                  //                System.out.println(pageIndex);
                 } else if (pageIndex > endIndex) {
                   break;
                 } else {
@@ -468,6 +470,10 @@ public class AggregationExecutor {
           }
           validityAggrResult.updateDPAndReverseDP();
           if (validityAggrResult.getStatisticsInstance().getRepairSelfFirst()) {
+            System.out.println(
+                finalStatisticsList.get(finalStatisticsList.size() - 1).getEndTime());
+            System.out.println(validityAggrResult.getStatisticsInstance().getStartTime());
+            System.out.println(validityAggrResult.getStatisticsInstance().getEndTime());
             break;
           } else {
             canMerge[j] = false;

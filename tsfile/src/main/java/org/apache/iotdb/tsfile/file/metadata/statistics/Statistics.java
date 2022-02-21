@@ -297,7 +297,7 @@ public abstract class Statistics<T extends Serializable> {
     timeWindow.add(time);
     valueWindow.add(value);
     endValue = value;
-    if (index <= 1) {
+    if (index < 1) {
       startValue = value;
       return;
     }
@@ -326,7 +326,7 @@ public abstract class Statistics<T extends Serializable> {
     timeWindow.add(time);
     valueWindow.add(value);
     endValue = value;
-    if (index <= 1) {
+    if (index < 1) {
       startValue = value;
       return;
     }
