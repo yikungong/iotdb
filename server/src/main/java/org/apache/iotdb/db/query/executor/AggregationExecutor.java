@@ -374,6 +374,7 @@ public class AggregationExecutor {
             if (!unseqMerge) {
               statisticsList.add(validityAggrResult.getStatisticsInstance());
               indexUsed.add(nowPageIndex);
+              validityAggrResult.reset();
             }
             unseqMerge = true;
           }
