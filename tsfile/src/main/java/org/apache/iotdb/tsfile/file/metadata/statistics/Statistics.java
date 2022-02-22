@@ -449,14 +449,9 @@ public abstract class Statistics<T extends Serializable> {
       int dp = -1;
       boolean find = false;
       if (value < xMin || value > xMax) {
-        dp = 1000000;
+        dp = 100000000;
         firstRepair.add(true);
         DP.add(dp);
-        if (DP.size() > windowSize) {
-          DP.remove(0);
-          firstRepair.remove(0);
-          break;
-        }
         continue;
       }
       for (int i = 0; i < index; i++) {
@@ -509,10 +504,6 @@ public abstract class Statistics<T extends Serializable> {
         firstRepair.add(true);
       }
       DP.add(dp);
-      //      if (DP.size() > windowSize) {
-      //        int a = DP.remove(0);
-      //        boolean b = firstRepair.remove(0);
-      //      }
     }
   }
 
@@ -660,9 +651,9 @@ public abstract class Statistics<T extends Serializable> {
         dp = 1000000;
         lastRepair.add(true);
         reverseDP.add(dp);
-        if (reverseDP.size() > windowSize) {
-          break;
-        }
+        //        if (reverseDP.size() > windowSize) {
+        //          break;
+        //        }
         continue;
       }
       for (int i = Length - 1; i > j; i--) {
