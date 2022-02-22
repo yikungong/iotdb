@@ -68,6 +68,14 @@ public class ValidityAggrResult extends AggregateResult {
     statisticsInstance.updateReverseDP();
   }
 
+  public void updateDPAndReverseDPAll() {
+    if (statisticsInstance.getTimeWindow().size() == 0) {
+      return;
+    }
+    statisticsInstance.updateDPAll();
+    statisticsInstance.updateReverseDPAll();
+  }
+
   @Override
   public void updateResultFromPageData(
       IBatchDataIterator batchIterator, long minBound, long maxBound) throws IOException {

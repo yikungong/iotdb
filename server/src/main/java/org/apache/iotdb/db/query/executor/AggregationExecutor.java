@@ -292,6 +292,7 @@ public class AggregationExecutor {
       System.out.println("smax:" + smax + "smin:" + smin);
     }
     validityAllAggrResult.updateDPAndReverseDP();
+    System.out.println(validityAllAggrResult.getStatisticsInstance().getRepairSelfLast());
   }
 
   // validity
@@ -358,9 +359,8 @@ public class AggregationExecutor {
             continue;
           } else {
             System.out.println("unSeq");
-            if (!unseqMerge) {
+            if (!unseqMerge && nowPageIndex > 0) {
               statisticsList.add(validityAggrResult.getStatisticsInstance());
-              indexUsed.add(nowPageIndex);
               validityAggrResult.reset();
             }
             unseqMerge = true;
@@ -458,15 +458,15 @@ public class AggregationExecutor {
               break;
             }
           }
-          validityAggrResult.updateDPAndReverseDP();
+          validityAggrResult.updateDPAndReverseDPAll();
+          System.out.println(validityAggrResult.getStatisticsInstance().getStartTime());
+          System.out.println(validityAggrResult.getStatisticsInstance().getEndTime());
           if (finalStatisticsList.size() == 0) {
             break;
           }
           if (finalStatisticsList
               .get(finalStatisticsList.size() - 1)
               .checkMergeable(validityAggrResult.getStatisticsInstance())) {
-            System.out.println(validityAggrResult.getStatisticsInstance().getStartTime());
-            System.out.println(validityAggrResult.getStatisticsInstance().getEndTime());
             break;
           } else {
             canMerge[j] = false;
@@ -485,6 +485,7 @@ public class AggregationExecutor {
       validityAggrResult.updateResultFromStatistics(finalStatisticsList.get(i));
       i++;
     }
+    System.out.println(validityAggrResult.getStatisticsInstance().getRepairSelfLast());
     double smax =
         validityAggrResult.getStatisticsInstance().getSpeedAVG()
             + 3 * validityAggrResult.getStatisticsInstance().getSpeedSTD();
