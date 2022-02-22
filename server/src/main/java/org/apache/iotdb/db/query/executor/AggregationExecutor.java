@@ -471,6 +471,9 @@ public class AggregationExecutor {
             }
           }
           validityAggrResult.updateDPAndReverseDP();
+          if (finalStatisticsList.size() == 0) {
+            break;
+          }
           if (finalStatisticsList
               .get(finalStatisticsList.size() - 1)
               .checkMergeable(validityAggrResult.getStatisticsInstance())) {
