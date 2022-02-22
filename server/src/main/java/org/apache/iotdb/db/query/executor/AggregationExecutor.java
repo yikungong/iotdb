@@ -269,26 +269,11 @@ public class AggregationExecutor {
     while (seriesReader.hasNextFile()) {
       while (seriesReader.hasNextChunk()) {
         while (seriesReader.hasNextPage()) {
-          circle++;
           if (seriesReader.canUseCurrentPageStatistics()) {
             Statistics pageStatistic = seriesReader.currentPageStatistics();
-            if (validityAllAggrResult.checkMergeable(pageStatistic)) {
-              if (circle > muss) {
-                validityAllAggrResult.updateResultFromStatistics(pageStatistic);
-                seriesReader.skipCurrentPage();
-                System.out.println("page Merge");
-                if (circle >= 10) {
-                  circle = 0;
-                }
-                continue;
-              } else {
-                System.out.println("not Merge");
-              }
-            }
+            if (validityAllAggrResult.checkMergeable(pageStatistic)) {}
           }
-          if (circle >= 10) {
-            circle = 0;
-          }
+          System.out.println("not merge");
           IBatchDataIterator batchDataIterator = seriesReader.nextPage().getBatchDataIterator();
           validityAllAggrResult.updateResultFromPageData(batchDataIterator);
           batchDataIterator.reset();
@@ -301,9 +286,11 @@ public class AggregationExecutor {
     double smin =
         validityAllAggrResult.getStatisticsInstance().getSpeedAVG()
             - 3 * validityAllAggrResult.getStatisticsInstance().getSpeedSTD();
-    System.out.println("smax:" + smax + "smin:" + smin);
-    System.out.println(validityAllAggrResult.getStatisticsInstance().getSpeedAVG());
-    System.out.println(validityAllAggrResult.getStatisticsInstance().getSpeedSTD());
+    if (tsFileConfig.isUsePreSpeed()) {
+      System.out.println("smax:" + tsFileConfig.getsMax() + "smin:" + tsFileConfig.getSmin());
+    } else {
+      System.out.println("smax:" + smax + "smin:" + smin);
+    }
     validityAllAggrResult.updateDPAndReverseDP();
   }
 
@@ -392,7 +379,7 @@ public class AggregationExecutor {
       unseqIndex.clear();
     }
     statisticsList.add(validityAggrResult.getStatisticsInstance());
-
+    System.out.println(statisticsList.size());
     // can merge or not merge
     //    boolean[] indexBoolean = new boolean[nowPageIndex];
     //    for ( int j = nowPageIndex-1 ; j > 0 ; j--){
@@ -406,31 +393,32 @@ public class AggregationExecutor {
       canMerge[k] = true;
     }
     validityAggrResult.reset();
+    int pagesize = 0;
     while (i < statisticsList.size()) {
       // TODO: check merge code
       Statistics pageStatistic = statisticsList.get(i);
       if (validityAggrResult.checkMergeable(pageStatistic)) {
         finalStatisticsList.add(pageStatistic);
         validityAggrResult.setStatisticsInstance(pageStatistic);
+        pagesize++;
         System.out.println("merge");
         i++;
       } else {
         System.out.println(finalStatisticsList.get(finalStatisticsList.size() - 1).getStartTime());
-        System.out.println(finalStatisticsList.get(finalStatisticsList.size() - 1).getEndTime());
-        System.out.println(pageStatistic.getStartTime());
         System.out.println(pageStatistic.getEndTime());
-        // TODO: update when can not merge
         canMerge[i] = false;
         for (int j = i - 1; j >= 0; j--) {
-          validityAggrResult.reset();
           if (!canMerge[j] && j > 0) {
             System.out.println("Merge failed before");
             continue;
           }
+          pagesize--;
+          validityAggrResult.reset();
           if (finalStatisticsList.size() > 0) {
             finalStatisticsList.remove(finalStatisticsList.size() - 1);
           }
           int startIndex = indexUsed.get(j);
+          // TODO: end Index need update
           int endIndex = indexUsed.get(i);
           IAggregateReader seriesReaderTemp =
               new SeriesAggregateReader(
@@ -477,8 +465,6 @@ public class AggregationExecutor {
           if (finalStatisticsList
               .get(finalStatisticsList.size() - 1)
               .checkMergeable(validityAggrResult.getStatisticsInstance())) {
-            System.out.println(
-                finalStatisticsList.get(finalStatisticsList.size() - 1).getEndTime());
             System.out.println(validityAggrResult.getStatisticsInstance().getStartTime());
             System.out.println(validityAggrResult.getStatisticsInstance().getEndTime());
             break;
@@ -487,6 +473,7 @@ public class AggregationExecutor {
           }
         }
         finalStatisticsList.add(validityAggrResult.getStatisticsInstance());
+        pagesize++;
         System.out.println("can not Merge");
         i++;
       }
@@ -504,10 +491,12 @@ public class AggregationExecutor {
     double smin =
         validityAggrResult.getStatisticsInstance().getSpeedAVG()
             - 3 * validityAggrResult.getStatisticsInstance().getSpeedSTD();
-    System.out.println("smax:" + smax + "smin:" + smin);
-    System.out.println(validityAggrResult.getStatisticsInstance().getSpeedAVG());
-    System.out.println(validityAggrResult.getStatisticsInstance().getSpeedSTD());
-    //    validityAggrResult.updateDPAndReverseDP();
+    if (tsFileConfig.isUsePreSpeed()) {
+      System.out.println("smax:" + tsFileConfig.getsMax() + "smin:" + tsFileConfig.getSmin());
+    } else {
+      System.out.println("smax:" + smax + "smin:" + smin);
+    }
+    System.out.println(finalStatisticsList.size());
   }
 
   protected void aggregateOneAlignedSeries(
