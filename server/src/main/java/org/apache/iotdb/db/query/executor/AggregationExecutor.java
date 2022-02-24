@@ -351,7 +351,7 @@ public class AggregationExecutor {
               seriesReader.skipCurrentPage();
               continue;
             }
-            validityAggrResult.updateDPAndReverseDP();
+            validityAggrResult.updateDPAndReverseDPAll();
             statisticsList.add(validityAggrResult.getStatisticsInstance());
             validityAggrResult.setStatisticsInstance(pageStatistic);
             seriesReader.skipCurrentPage();
@@ -373,10 +373,10 @@ public class AggregationExecutor {
         }
       }
     }
-    validityAggrResult.updateDPAndReverseDP();
     if (unseqIndex.size() > 0) {
       indexUsed.add(unseqIndex.get(0));
       unseqIndex.clear();
+      validityAggrResult.updateDPAndReverseDPAll();
     }
     statisticsList.add(validityAggrResult.getStatisticsInstance());
     System.out.println(statisticsList.size());

@@ -147,8 +147,8 @@ public abstract class Statistics<T extends Serializable> {
   public int serialize(OutputStream outputStream) throws IOException {
     int byteLen = 0;
     if (timeWindow.size() != 0) {
-      updateDP();
-      updateReverseDP();
+      updateDPAll();
+      updateReverseDPAll();
     }
     byteLen += ReadWriteForEncodingUtils.writeUnsignedVarInt(count, outputStream);
     byteLen += ReadWriteIOUtils.write(startTime, outputStream);
@@ -306,35 +306,29 @@ public abstract class Statistics<T extends Serializable> {
       double speedNow = (valueWindow.get(index) - valueWindow.get(index - 1)) / timeLastInterval;
       updateAVGSTD(speedNow);
     }
-    //    if (index > windowSize) {
-    //      timeWindow.remove(0);
-    //      valueWindow.remove(0);
-    //      if (DP.size() != 0) {
-    //        DP.remove(0);
-    //        firstRepair.remove(0);
-    //      }
-    //    }
   }
 
   // 更新ValidityAll
   public void updateAll(long time, double value) {
-    update(time);
-    updateStats(value);
-    // update window
-
-    int index = timeWindow.size();
-    timeWindow.add(time);
-    valueWindow.add(value);
-    endValue = value;
-    if (index < 1) {
-      startValue = value;
-      return;
-    }
-    double timeLastInterval = timeWindow.get(index) - timeWindow.get(index - 1);
-    if (timeLastInterval != 0) {
-      double speedNow = (valueWindow.get(index) - valueWindow.get(index - 1)) / timeLastInterval;
-      updateAVGSTD(speedNow);
-    }
+    update(time, value);
+    //    update(time / 1000);
+    //    updateStats(value);
+    //    // update window
+    //
+    //    int index = timeWindow.size();
+    //    timeWindow.add(time / 1000);
+    //    valueWindow.add(value);
+    //    endValue = value;
+    //    if (index < 1) {
+    //      startValue = value;
+    //      return;
+    //    }
+    //    double timeLastInterval = timeWindow.get(index) - timeWindow.get(index - 1);
+    //    if (timeLastInterval != 0) {
+    //      double speedNow = (valueWindow.get(index) - valueWindow.get(index - 1)) /
+    // timeLastInterval;
+    //      updateAVGSTD(speedNow);
+    //    }
   }
 
   public void updateDPAll() {
@@ -354,6 +348,8 @@ public abstract class Statistics<T extends Serializable> {
     }
     //    double smax = 1;
     //    double smin = -1;
+    firstRepair.clear();
+    DP.clear();
     firstRepair.add(false);
     DP.add(0);
     for (int index = 1; index < timeWindow.size(); index++) {
@@ -524,7 +520,8 @@ public abstract class Statistics<T extends Serializable> {
     }
     //    double smax = 1;
     //    double smin = -1;
-
+    lastRepair.clear();
+    reverseDP.clear();
     lastRepair.add(false);
     reverseDP.add(0);
 
