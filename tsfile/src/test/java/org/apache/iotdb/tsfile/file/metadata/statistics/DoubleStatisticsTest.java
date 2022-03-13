@@ -105,31 +105,20 @@ public class DoubleStatisticsTest {
 
     DescriptiveStatistics stats = new DescriptiveStatistics();
 
+    doubleStats.update(1623111081L, 1d);
     System.out.println(Runtime.getRuntime().totalMemory() / 1024 / 1024);
-    for (int i = 1; i < 3000; i++) {
-      doubleStats.update(1623311071000L - 3000 * 1000 + i * 1000, 2.32d);
-      stats.addValue(0d / 1000);
+    for (int i = 0; i < 3000; i++) {
+      doubleStats.update(1623311071L - 3000 * 1 + i * 1, 0d);
     }
-    doubleStats.updateDP();
-    doubleStats.updateReverseDP();
-    doubleStats.update(1623311071000L, 2.32d);
-    stats.addValue(0d / 1000);
-    doubleStats.update(1623311072000L, 12.32d);
-    stats.addValue(10d / 1000);
-    doubleStats.update(1623311073000L, 2.32d);
-    stats.addValue(-10d / 1000);
-    doubleStats.update(1623311074000L, 2.32d);
-    stats.addValue(0d / 1000);
-    doubleStats.update(1623311075000L, 2.32d);
-
+    doubleStats.update(1623311081L, 1d);
     System.out.println(Runtime.getRuntime().freeMemory() / 1024 / 1024);
-    System.out.println(stats.getMean() + 3 * stats.getStandardDeviation());
-    System.out.println(stats.getMean() - 3 * stats.getStandardDeviation());
-    double smax = doubleStats.getSpeedAVG() + 3 * doubleStats.getSpeedSTD();
-    double smin = doubleStats.getSpeedAVG() - 3 * doubleStats.getSpeedSTD();
 
+    doubleStats.setSpeedAVG(100);
+    doubleStats.setSpeedSTD(100);
+    doubleStats.setxMax(0);
+    doubleStats.setxMin(0);
     doubleStats.updateDP();
-    doubleStats.updateReverseDP();
+    doubleStats.updateReverseDPAll();
     assertEquals(1.0, doubleStats.getValidity(), maxError);
   }
 }

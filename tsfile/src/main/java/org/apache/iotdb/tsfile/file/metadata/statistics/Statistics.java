@@ -73,6 +73,8 @@ public abstract class Statistics<T extends Serializable> {
   private List<Boolean> firstRepair = new ArrayList<>();
   private boolean repairSelfLast = true;
   private boolean repairSelfFirst = true;
+  private double xMax = tsFileConfig.getXMax();
+  private double xMin = tsFileConfig.getXMin();
   private int indexNotRepair = -1;
   private List<Long> timeWindow = new ArrayList<>();
   private List<Double> valueWindow = new ArrayList<>();
@@ -332,9 +334,8 @@ public abstract class Statistics<T extends Serializable> {
   }
 
   public void updateDPAll() {
-    double xMax = tsFileConfig.getXMax();
-    double xMin = tsFileConfig.getXMin();
-
+    System.out.println(xMax);
+    System.out.println(xMin);
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
     if (Math.abs(smax) > Math.abs(smin)) {
@@ -417,8 +418,6 @@ public abstract class Statistics<T extends Serializable> {
   }
 
   public void updateDP() {
-    double xMax = tsFileConfig.getXMax();
-    double xMin = tsFileConfig.getXMin();
 
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
@@ -504,8 +503,6 @@ public abstract class Statistics<T extends Serializable> {
   }
 
   public void updateReverseDPAll() {
-    double xMax = tsFileConfig.getXMax();
-    double xMin = tsFileConfig.getXMin();
 
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
@@ -585,7 +582,7 @@ public abstract class Statistics<T extends Serializable> {
         }
       }
       if (!find) {
-        dp = Length - 1;
+        dp = Length - j - 1;
         lastRepair.add(true);
       }
       reverseDP.add(dp);
@@ -612,10 +609,6 @@ public abstract class Statistics<T extends Serializable> {
   }
 
   public void updateReverseDP() {
-
-    double xMax = tsFileConfig.getXMax();
-    double xMin = tsFileConfig.getXMin();
-
     double smax = this.speedAVG + 3 * this.speedSTD;
     double smin = this.speedAVG - 3 * this.speedSTD;
     if (Math.abs(smax) > Math.abs(smin)) {
@@ -645,7 +638,7 @@ public abstract class Statistics<T extends Serializable> {
       int dp = -1;
       boolean find = false;
       if (value < xMin || value > xMax) {
-        dp = 1000000;
+        dp = 100000000;
         lastRepair.add(true);
         reverseDP.add(dp);
         //        if (reverseDP.size() > windowSize) {
@@ -1034,6 +1027,22 @@ public abstract class Statistics<T extends Serializable> {
 
   public void setEndValue(double endValue) {
     this.endValue = endValue;
+  }
+
+  public double getxMax() {
+    return xMax;
+  }
+
+  public void setxMax(double xMax) {
+    this.xMax = xMax;
+  }
+
+  public double getxMin() {
+    return xMin;
+  }
+
+  public void setxMin(double xMin) {
+    this.xMin = xMin;
   }
 
   public abstract long calculateRamSize();
