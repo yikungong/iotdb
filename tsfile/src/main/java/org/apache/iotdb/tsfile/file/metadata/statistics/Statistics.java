@@ -372,7 +372,7 @@ public abstract class Statistics<T extends Serializable> {
           continue;
         }
         double speedNow = (value - valueWindow.get(i)) / (time - timeWindow.get(i));
-        if (speedNow <= smax && speedNow >= smin) {
+        if (checkSpeed(speedNow, smax, smin)) {
           find = true;
           if (dp == -1) {
             dp = DP.get(i) + index - i - 1;
@@ -457,7 +457,7 @@ public abstract class Statistics<T extends Serializable> {
           continue;
         }
         double speedNow = (value - valueWindow.get(i)) / (time - timeWindow.get(i));
-        if (speedNow <= smax && speedNow >= smin) {
+        if (checkSpeed(speedNow, smax, smin)) {
           find = true;
           if (dp == -1) {
             dp = DP.get(i) + index - i - 1;
@@ -544,7 +544,7 @@ public abstract class Statistics<T extends Serializable> {
           continue;
         }
         double speedNow = (value - valueWindow.get(i)) / (time - timeWindow.get(i));
-        if (speedNow <= smax && speedNow >= smin) {
+        if (checkSpeed(speedNow, smax, smin)) {
           find = true;
           if (dp == -1) {
             dp = reverseDP.get(index) + i - j - 1;
@@ -655,7 +655,7 @@ public abstract class Statistics<T extends Serializable> {
           continue;
         }
         double speedNow = (value - valueWindow.get(i)) / (time - timeWindow.get(i));
-        if (speedNow <= smax && speedNow >= smin) {
+        if (checkSpeed(speedNow, smax, smin)) {
           find = true;
           if (dp == -1) {
             dp = reverseDP.get(index) + i - j - 1;
@@ -1056,24 +1056,22 @@ public abstract class Statistics<T extends Serializable> {
     } else if (this.repairSelfLast && statisticsMerge.repairSelfFirst) {
       double speed =
           (this.endValue - statisticsMerge.startValue) / (this.endTime - statisticsMerge.startTime);
-      //      double smax =
-      //          Math.max(
-      //              this.speedAVG + 3 * this.speedSTD,
-      //              statisticsMerge.speedAVG + 3 * statisticsMerge.speedSTD);
-      //      double smin =
-      //          Math.min(
-      //              this.speedAVG - 3 * this.speedSTD,
-      //              statisticsMerge.speedAVG - 3 * statisticsMerge.speedSTD);
       double smax = tsFileConfig.getsMax();
       double smin = tsFileConfig.getSmin();
       //      double smax = 1;
       //      double smin = -1;
-      validityMerge = speed <= smax && speed >= smin;
+      validityMerge = checkSpeed(speed, smax, smin);
       return validityMerge;
     } else {
       validityMerge = false;
       return false;
     }
+  }
+
+  public boolean checkSpeed(double speedNow, double speedMax, double speedMin) {
+    double deltaMax = 0.0;
+    double deltaMin = 0.0;
+    return speedNow <= speedMax + deltaMax && speedNow >= speedMin + deltaMin;
   }
 
   @Override
