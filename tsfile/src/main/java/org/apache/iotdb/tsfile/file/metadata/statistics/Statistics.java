@@ -68,6 +68,7 @@ public abstract class Statistics<T extends Serializable> {
   private double speedAVG = 0;
   private double speedSTD = 0;
   private boolean usePreSpeed = tsFileConfig.isUsePreSpeed();
+  private boolean usePreSpeedInTsFile = true;
   private int windowSize = tsFileConfig.getMaxNumberOfPointsInPage() * 2;
   private List<Boolean> lastRepair = new ArrayList<>();
   private List<Boolean> firstRepair = new ArrayList<>();
@@ -141,6 +142,7 @@ public abstract class Statistics<T extends Serializable> {
         + 24 // validity, speed max, speed min
         + 16 // startValue, endValue
         + 2 // repairFirst and last
+        + 1 // usePreSpeed
         + getStatsSize();
   }
 
@@ -163,6 +165,7 @@ public abstract class Statistics<T extends Serializable> {
     byteLen += ReadWriteIOUtils.write(endValue, outputStream);
     byteLen += ReadWriteIOUtils.write(repairSelfFirst, outputStream);
     byteLen += ReadWriteIOUtils.write(repairSelfLast, outputStream);
+    byteLen += ReadWriteIOUtils.write(usePreSpeed, outputStream);
 
     // value statistics of different data type
     byteLen += serializeStats(outputStream);
@@ -346,6 +349,8 @@ public abstract class Statistics<T extends Serializable> {
     if (usePreSpeed) {
       smin = tsFileConfig.getSmin();
       smax = tsFileConfig.getsMax();
+      this.speedAVG = (smin + smax) / 2;
+      this.speedSTD = (smax - this.speedAVG) / 3;
     }
     //    double smax = 1;
     //    double smin = -1;
@@ -429,6 +434,8 @@ public abstract class Statistics<T extends Serializable> {
     if (usePreSpeed) {
       smin = tsFileConfig.getSmin();
       smax = tsFileConfig.getsMax();
+      this.speedAVG = (smin + smax) / 2;
+      this.speedSTD = (smax - this.speedAVG) / 3;
     }
     //    double smax = 1;
     //    double smin = -1;
@@ -514,6 +521,8 @@ public abstract class Statistics<T extends Serializable> {
     if (usePreSpeed) {
       smin = tsFileConfig.getSmin();
       smax = tsFileConfig.getsMax();
+      this.speedAVG = (smin + smax) / 2;
+      this.speedSTD = (smax - this.speedAVG) / 3;
     }
     //    double smax = 1;
     //    double smin = -1;
@@ -603,7 +612,7 @@ public abstract class Statistics<T extends Serializable> {
     if (this.firstRepair.get(this.indexLastRepaired)) {
       this.repairSelfFirst = false;
     }
-    if (this.lastRepair.get(this.indexLastRepaired)) {
+    if (this.lastRepair.get(Length - 1 - this.indexLastRepaired)) {
       this.repairSelfLast = false;
     }
   }
@@ -619,6 +628,8 @@ public abstract class Statistics<T extends Serializable> {
     if (usePreSpeed) {
       smin = tsFileConfig.getSmin();
       smax = tsFileConfig.getsMax();
+      this.speedAVG = (smin + smax) / 2;
+      this.speedSTD = (smax - this.speedAVG) / 3;
     }
     //    double smax = 1;
     //    double smin = -1;
@@ -725,7 +736,7 @@ public abstract class Statistics<T extends Serializable> {
     } else this.repairSelfFirst = !this.firstRepair.get(this.indexLastRepaired);
     if (this.lastRepair.size() <= this.indexLastRepaired) {
       this.repairSelfLast = true;
-    } else this.repairSelfLast = !this.lastRepair.get(this.indexLastRepaired);
+    } else this.repairSelfLast = !this.lastRepair.get(DPLength - 1 - this.indexLastRepaired);
   }
 
   public void updateAVGSTD(double speedNow) {
@@ -875,6 +886,7 @@ public abstract class Statistics<T extends Serializable> {
     statistics.setEndValue(ReadWriteIOUtils.readDouble(inputStream));
     statistics.setRepairSelfFirst(ReadWriteIOUtils.readBool(inputStream));
     statistics.setRepairSelfLast(ReadWriteIOUtils.readBool(inputStream));
+    statistics.setUsePreSpeedInTsFile(ReadWriteIOUtils.readBool(inputStream));
 
     statistics.deserialize(inputStream);
     statistics.isEmpty = false;
@@ -895,6 +907,7 @@ public abstract class Statistics<T extends Serializable> {
     statistics.setEndValue(ReadWriteIOUtils.readDouble(buffer));
     statistics.setRepairSelfFirst(ReadWriteIOUtils.readBool(buffer));
     statistics.setRepairSelfLast(ReadWriteIOUtils.readBool(buffer));
+    statistics.setUsePreSpeedInTsFile(ReadWriteIOUtils.readBool(buffer));
 
     statistics.deserialize(buffer);
     statistics.isEmpty = false;
@@ -1045,6 +1058,14 @@ public abstract class Statistics<T extends Serializable> {
     this.xMin = xMin;
   }
 
+  public boolean isUsePreSpeedInTsFile() {
+    return usePreSpeedInTsFile;
+  }
+
+  public void setUsePreSpeedInTsFile(boolean usePreSpeedInTsFile) {
+    this.usePreSpeedInTsFile = usePreSpeedInTsFile;
+  }
+
   public abstract long calculateRamSize();
 
   public boolean checkMergeable(Statistics<? extends Serializable> statisticsMerge) {
@@ -1056,11 +1077,24 @@ public abstract class Statistics<T extends Serializable> {
     } else if (this.repairSelfLast && statisticsMerge.repairSelfFirst) {
       double speed =
           (this.endValue - statisticsMerge.startValue) / (this.endTime - statisticsMerge.startTime);
-      double smax = tsFileConfig.getsMax();
-      double smin = tsFileConfig.getSmin();
-      //      double smax = 1;
-      //      double smin = -1;
+      double smax = this.speedAVG + 3 * this.speedSTD;
+      double smin = this.speedAVG - 3 * this.speedSTD;
+      if (Math.abs(smax) > Math.abs(smin)) {
+        smin = -(this.speedAVG + 3 * this.speedSTD);
+      } else {
+        smax = -(this.speedAVG - 3 * this.speedSTD);
+      }
+      if (usePreSpeed) {
+        smin = tsFileConfig.getSmin();
+        smax = tsFileConfig.getsMax();
+        this.speedAVG = (smin + smax) / 2;
+        this.speedSTD = (smax - this.speedAVG) / 3;
+      }
       validityMerge = checkSpeed(speed, smax, smin);
+      if (!validityMerge) {
+        System.out.println("smax" + smax);
+        System.out.println("smin" + smin);
+      }
       return validityMerge;
     } else {
       validityMerge = false;
@@ -1072,6 +1106,23 @@ public abstract class Statistics<T extends Serializable> {
     double deltaMax = 0.0;
     double deltaMin = 0.0;
     return speedNow <= speedMax + deltaMax && speedNow >= speedMin + deltaMin;
+  }
+
+  public boolean sameConstraints(double smax, double smin, double xmax, double xmin) {
+    if (usePreSpeed == usePreSpeedInTsFile) {
+      if (!usePreSpeed) {
+        return true;
+      }
+      System.out.println(
+          "TsFileSmax:"
+              + (this.speedAVG + 3 * this.speedSTD)
+              + "TsFileSmin:"
+              + (this.speedAVG - 3 * this.speedSTD));
+      return (smax == this.speedAVG + 3 * this.speedSTD)
+          && (smin == this.speedAVG - 3 * this.speedSTD);
+    } else {
+      return false;
+    }
   }
 
   @Override

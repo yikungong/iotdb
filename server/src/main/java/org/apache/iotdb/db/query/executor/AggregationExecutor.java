@@ -346,6 +346,14 @@ public class AggregationExecutor {
             indexUsed.add(nowPageIndex);
             Statistics pageStatistic = seriesReader.currentPageStatistics();
             if (nowPageIndex == 0) {
+              if (!pageStatistic.sameConstraints(
+                  tsFileConfig.getsMax(),
+                  tsFileConfig.getSmin(),
+                  tsFileConfig.getXMax(),
+                  tsFileConfig.getXMin())) {
+                System.out.println("constraints inconsistent with TsFile");
+                return;
+              }
               validityAggrResult.setStatisticsInstance(pageStatistic);
               nowPageIndex++;
               seriesReader.skipCurrentPage();

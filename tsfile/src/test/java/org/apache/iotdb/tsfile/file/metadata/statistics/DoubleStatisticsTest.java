@@ -106,13 +106,15 @@ public class DoubleStatisticsTest {
     DescriptiveStatistics stats = new DescriptiveStatistics();
 
     System.out.println(Runtime.getRuntime().totalMemory() / 1024 / 1024);
+    doubleStats.update(1623311071000L - 3001, (double) -100000);
     for (int i = 0; i < 3000; i++) {
       doubleStats.update(1623311071000L - 3000 + i, (double) i * 1);
     }
+
     System.out.println(Runtime.getRuntime().freeMemory() / 1024 / 1024);
 
     doubleStats.setSpeedAVG(0);
-    doubleStats.setSpeedSTD(0.333);
+    doubleStats.setSpeedSTD(100);
     doubleStats.updateDPAll();
     doubleStats.updateReverseDPAll();
     assertEquals((double) 1 / 3000, doubleStats.getValidity(), maxError);
