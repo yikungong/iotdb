@@ -117,6 +117,6 @@ public class DoubleStatisticsTest {
     doubleStats.setSpeedSTD(100);
     doubleStats.updateDPAll();
     doubleStats.updateReverseDPAll();
-    assertEquals((double) 1 / 3000, doubleStats.getValidity(), maxError);
+    assertEquals((double) 3000 / 3001, doubleStats.getValidity(), maxError);
   }
 }

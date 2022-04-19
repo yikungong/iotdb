@@ -580,7 +580,7 @@ public abstract class Statistics<T extends Serializable> {
                   lastRepair.add(true);
                 }
               } else {
-                if (lastRepair.size() >= Length) {
+                if (lastRepair.size() >= Length - j) {
                   lastRepair.set(Length - j - 1, false);
                 } else {
                   lastRepair.add(false);
